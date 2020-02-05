@@ -100,97 +100,97 @@ public class HelloJME3 extends SimpleApplication
     }
 
     public void simpleInitApp() {
-      /** Set up Physics */
-      bulletAppState = new BulletAppState();
-      stateManager.attach(bulletAppState);
-      //bulletAppState.setDebugEnabled(true);
+        /** Set up Physics */
+        bulletAppState = new BulletAppState();
+        stateManager.attach(bulletAppState);
+        //bulletAppState.setDebugEnabled(true);
 
-      // We re-use the flyby camera for rotation, while positioning is handled by physics
-      viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
-      flyCam.setMoveSpeed(100);
-      setUpKeys();
-      setUpLight();
+        // We re-use the flyby camera for rotation, while positioning is handled by physics
+        viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
+        flyCam.setMoveSpeed(100);
+        setUpKeys();
+        setUpLight();
 
-      // We load the scene from the zip file and adjust its size.
+        // We load the scene from the zip file and adjust its size.
 
-      Material terrainMat = new Material(assetManager,
-              "Common/MatDefs/Terrain/Terrain.j3md");
-      terrainMat.setTexture("Alpha", assetManager.loadTexture(
-              "Textures/Terrain/splat/alphamap.png"));
-      AbstractHeightMap heightmap = null;
-      Texture heightMapImage = assetManager.loadTexture(
-              "Textures/Terrain/splat/mountains512.png");
-      Texture grass = assetManager.loadTexture(
-              "Textures/Terrain/splat/grass.jpg");
-      grass.setWrap(WrapMode.Repeat);
-      terrainMat.setTexture("Tex1", grass);
-      terrainMat.setFloat("Tex1Scale", 64f);
-      Texture dirt = assetManager.loadTexture(
-              "Textures/Terrain/splat/dirt.jpg");
-      dirt.setWrap(WrapMode.Repeat);
-      terrainMat.setTexture("Tex2", dirt);
-      terrainMat.setFloat("Tex2Scale", 32f);
-      Texture rock = assetManager.loadTexture(
-              "Textures/Terrain/splat/road.jpg");
-      rock.setWrap(WrapMode.Repeat);
-      terrainMat.setTexture("Tex3", rock);
-      terrainMat.setFloat("Tex3Scale", 128f);
-      heightmap = new ImageBasedHeightMap(heightMapImage.getImage());
-      terrain = new TerrainQuad("my terrain", 65, 513, heightmap.getHeightMap());
-      terrain.setMaterial(terrainMat);
+        Material terrainMat = new Material(assetManager,
+                "Common/MatDefs/Terrain/Terrain.j3md");
+        terrainMat.setTexture("Alpha", assetManager.loadTexture(
+                "Textures/Terrain/splat/alphamap.png"));
+        AbstractHeightMap heightmap = null;
+        Texture heightMapImage = assetManager.loadTexture(
+                "Textures/Terrain/splat/mountains512.png");
+        Texture grass = assetManager.loadTexture(
+                "Textures/Terrain/splat/grass.jpg");
+        grass.setWrap(WrapMode.Repeat);
+        terrainMat.setTexture("Tex1", grass);
+        terrainMat.setFloat("Tex1Scale", 64f);
+        Texture dirt = assetManager.loadTexture(
+                "Textures/Terrain/splat/dirt.jpg");
+        dirt.setWrap(WrapMode.Repeat);
+        terrainMat.setTexture("Tex2", dirt);
+        terrainMat.setFloat("Tex2Scale", 32f);
+        Texture rock = assetManager.loadTexture(
+                "Textures/Terrain/splat/road.jpg");
+        rock.setWrap(WrapMode.Repeat);
+        terrainMat.setTexture("Tex3", rock);
+        terrainMat.setFloat("Tex3Scale", 128f);
+        heightmap = new ImageBasedHeightMap(heightMapImage.getImage());
+        terrain = new TerrainQuad("my terrain", 65, 513, heightmap.getHeightMap());
+        terrain.setMaterial(terrainMat);
 
-      terrain.setLocalScale(2f);
+        terrain.setLocalScale(2f);
 
-      // We set up collision detection for the scene by creating a
-      // compound collision shape and a static RigidBodyControl with mass zero.
-      CollisionShape sceneShape =
-              CollisionShapeFactory.createMeshShape(terrain);
-      landscape = new RigidBodyControl(sceneShape, 0);
-      terrain.addControl(landscape);
+        // We set up collision detection for the scene by creating a
+        // compound collision shape and a static RigidBodyControl with mass zero.
+        CollisionShape sceneShape =
+                CollisionShapeFactory.createMeshShape(terrain);
+        landscape = new RigidBodyControl(sceneShape, 0);
+        terrain.addControl(landscape);
 
-      /**
-       * We set up collision detection for the player by creating
-       * a capsule collision shape and a CharacterControl.
-       * The CharacterControl offers extra settings for
-       * size, stepheight, jumping, falling, and gravity.
-       * We also put the player in its starting position.
-       */
-      CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
-      player = new CharacterControl(capsuleShape, 0.05f);
-      player.setJumpSpeed(20);
-      player.setFallSpeed(30);
-      player.setPhysicsLocation(new Vector3f(0, 10, 0));
+        /**
+         * We set up collision detection for the player by creating
+         * a capsule collision shape and a CharacterControl.
+         * The CharacterControl offers extra settings for
+         * size, stepheight, jumping, falling, and gravity.
+         * We also put the player in its starting position.
+         */
+        CapsuleCollisionShape capsuleShape = new CapsuleCollisionShape(1.5f, 6f, 1);
+        player = new CharacterControl(capsuleShape, 0.05f);
+        player.setJumpSpeed(20);
+        player.setFallSpeed(30);
+        player.setPhysicsLocation(new Vector3f(0, 10, 0));
 
-      // We attach the scene and the player to the rootnode and the physics space,
-      // to make them appear in the game world.
-      rootNode.attachChild(terrain);
-      bulletAppState.getPhysicsSpace().add(landscape);
-      bulletAppState.getPhysicsSpace().add(player);
+        // We attach the scene and the player to the rootnode and the physics space,
+        // to make them appear in the game world.
+        rootNode.attachChild(terrain);
+        bulletAppState.getPhysicsSpace().add(landscape);
+        bulletAppState.getPhysicsSpace().add(player);
 
-      // You can change the gravity of individual physics objects after they are
-      // added to the PhysicsSpace.
-      player.setGravity(new Vector3f(0,-30f,0));
-                                                  
-      char[][] mazeTest = {{'9','1','1','4'},  //                                     _       _   
-                           {'2','8','A','3'},  //0: __ v  2: | <  4:I_^>  6: _I^<  8:I v>  A:  I v< 
-                           {'2','4','6','3'},  //                                     _       _
-                           {'5','0','0','7'}}; //1: __ ^  3: | >  5:I_v<  7: _Iv>  9:I ^<  B:  I ^>
-      char[][] maze2 = {{'q','q','q','q'},
-                        {'q','q','q','q'},
-                        {'q','q','q','q'},
-                        {'0','q','q','0'}};
-      
-      
-      
-      
-      Node world = new Node("world");
-      createMaze(maze2,30,30,world); 
-      
-      addCubeBlue(0,0,0);
-      addCubeBlue(2,0,0);
-      addCubeBlue(4,0,0);
-      addCubeRed(0,0,2);
-      addCubeRed(0,0,4);                                         
+        // You can change the gravity of individual physics objects after they are
+        // added to the PhysicsSpace.
+        player.setGravity(new Vector3f(0,-30f,0));
+
+        char[][] mazeTest = {{'9','1','1','B'},  //                                     _       _   
+                             {'2','8','A','3'},  //0: __ v  2: | <  4:I_^>  6: _I^<  8:I v>  A:  I v< 
+                             {'2','4','6','3'},  //                                     _       _
+                             {'5','0','0','7'}}; //1: __ ^  3: | >  5:I_v<  7: _Iv>  9:I ^<  B:  I ^>
+        char[][] maze2 = {{'0','4','5','0'},
+                          {'0','A','B','0'},
+                          {'0','0','0','0'},
+                          {'1','0','1','0'}};
+
+
+
+
+        Node world = new Node("world");
+        createMaze(mazeTest,30,30,world); 
+
+        addCubeBlue(0,0,0);
+        addCubeBlue(2,0,0);
+        addCubeBlue(4,0,0);
+        addCubeRed(0,0,2);
+        addCubeRed(0,0,4);                                         
 
     }
 
@@ -198,247 +198,178 @@ public class HelloJME3 extends SimpleApplication
 
 
   
-void createMaze(char[][] matriz, int height, int width, Node world){
-    for(int i = 0; i<matriz.length; i++){
-        for(int j = 0; j<matriz[i].length; j++){
-            switch(matriz[i][j]){
-                case '0':
-                    addFlatHorizontalWall(height, width,i,0,matriz.length-j,0,(float)Math.PI/2,0,world);
-                    break;
-                case '1':
-                    addFlatHorizontalWall(height, width,i,0,matriz.length-j-1,0,3*(float)Math.PI/2,0,world);
-                    break;
-                case '2':
-                    addFlatVerticalWall(height, width,i-1,0,matriz.length-j,0,0,0,world);
-                    break;
-                case '3':
-                    addFlatVerticalWall(height, width,i,0,matriz.length-j,0,(float)Math.PI,0,world);
-                    break;
+    
+    
+    void createMaze(char[][] matriz, int height, int width, Node world){
+        for(int i = 0; i<matriz.length; i++){
+            for(int j = 0; j<matriz[i].length; j++){
+                switch(matriz[i][j]){
+                    case '0':
+                        addWall(height, width,j,0,i,world,"dh");
+                        break;
+                    case '1':
+                        addWall(height, width,j,0,i,world,"uh");
+                        break;
+                    case '2':
+                        addWall(height, width,j,0,i,world,"lv");
+                        break;
+                    case '3':
+                        addWall(height, width,j,0,i,world,"rv");
+                        break;
+
+                    case '4':
+                        addHalfWall(height, width,j,0,i,world,"ruh");
+                        addHalfWall(height, width,j,0,i,world,"trv");
+                        break;
+
+                    case '5':
+                        addHalfWall(height, width,j,0,i,world,"rdh");
+                        addHalfWall(height, width,j,0,i,world,"tlv");
+                        break;
+
+                    case '6':
+                        addHalfWall(height, width,j,0,i,world,"luh");
+                        addHalfWall(height, width,j,0,i,world,"tlv");
+                        break;
+
+                    case '7':
+                        addHalfWall(height, width,j,0,i,world,"ldh");
+                        addHalfWall(height, width,j,0,i,world,"trv");
+                        break;
+
+                    case '8':
+                        addHalfWall(height, width,j,0,i,world,"rdh");
+                        addHalfWall(height, width,j,0,i,world,"brv");
+                        break;
+                    case '9':
+                        addHalfWall(height, width,j,0,i,world,"ruh");
+                        addHalfWall(height, width,j,0,i,world,"blv");
+                        break;
+                    case 'A':
+                        addHalfWall(height, width,j,0,i,world,"ldh");
+                        addHalfWall(height, width,j,0,i,world,"blv");
+                        break;
+                    case 'B':
+                        addHalfWall(height, width,j,0,i,world,"luh");
+                        addHalfWall(height, width,j,0,i,world,"brv");
+                        break;
+                }
                 
-                case '4':
-                    addRightHalfFlatHorizontalWall(height, width,i,0,matriz.length-j-0.5f,0,3*(float)Math.PI/2,0,world);
-                    addTopHalfFlatVerticalWall(height, width,i-0.5f,0,matriz.length-j,0,(float)Math.PI,0,world);
-                    break;
-                
-                case '5':
-                    addRightHalfFlatHorizontalWall(height, width,i,0,matriz.length-j,0,(float)Math.PI/2,0,world);
-                    addTopHalfFlatVerticalWall(height, width,i-1,0,matriz.length-j,0,0,0,world);
-                    break;
-                
-                case '6':
-                    addLeftHalfFlatHorizontalWall(height, width,i,0,matriz.length-j-0.5f,0,3*(float)Math.PI/2,0,world);
-                    addTopHalfFlatVerticalWall(height, width,i-1,0,matriz.length-j,0,0,0,world);
-                    break;
-                
-                case '7':
-                    addLeftHalfFlatHorizontalWall(height, width,i,0,matriz.length-j,0,(float)Math.PI/2,0,world);
-                    addTopHalfFlatVerticalWall(height, width,i-0.5f,0,matriz.length-j,0,(float)Math.PI,0,world);
-                    break;
-                
-                case '8':
-                    addRightHalfFlatHorizontalWall(height, width,i,0,matriz.length-j,0,(float)Math.PI/2,0,world);
-                    addBottomHalfFlatVerticalWall(height, width,i,0,matriz.length-j,0,(float)Math.PI,0,world);
-                    break;
-                case '9':
-                    addRightHalfFlatHorizontalWall(height, width,i,0,matriz.length-j-0.5f,0,3*(float)Math.PI/2,0,world);
-                    addBottomHalfFlatVerticalWall(height, width,i-0.5f,0,matriz.length-j,0,0,0,world);
-                    break;
-                case 'A':
-                    addLeftHalfFlatHorizontalWall(height, width,i,0,matriz.length-j,0,(float)Math.PI/2,0,world);
-                    addBottomHalfFlatVerticalWall(height, width,i-0.5f,0,matriz.length-j,0,0,0,world);
-                    break;
-                case 'B':
-                    addLeftHalfFlatHorizontalWall(height, width,i,0,matriz.length-j-0.5f,0,3*(float)Math.PI/2,0,world);
-                    addBottomHalfFlatVerticalWall(height, width,i,0,matriz.length-j,0,(float)Math.PI,0,world);
-                    break;
-            }    
+            }
+        }
+
+
+        rootNode.attachChild(world);
+    }
+    
+    void addWall(float height, float width, float moveX, float moveY, float moveZ, Node world, String version){
+        Quad quad = new Quad(width,height);
+        Geometry walle = new Geometry("Wall-e",quad);
+        Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
+
+        Texture image = assetManager.loadTexture("Textures/DuplicatedBrickWall.jpg");
+
+        walleMat.setTexture("DiffuseMap", image);
+        walleMat.setBoolean("UseMaterialColors",true);
+        walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
+        walleMat.setColor("Specular",ColorRGBA.White); // for shininess
+        walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
+        walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
+        walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
+        System.out.println(walleMat.getParams());
+        walle.setMaterial(walleMat);
+        Node walleNod = new Node("walleNod");
+        world.attachChild(walleNod);
+        walleNod.attachChild(walle);
+        
+        
+        switch(version){
+            case "dh":
+                walleNod.move(moveX*width , moveY*height, moveZ*width + width/2);
+                walleNod.rotate(0,0,0);
+                break;
+            case "uh":
+                walleNod.move((moveX+1)*width, moveY*height, moveZ*width + width/2);
+                walleNod.rotate(0,(float)Math.PI,0);
+                break;
+            case "lv":
+                walleNod.move(moveX*width + width/2, moveY*height, moveZ*width);
+                walleNod.rotate(0,3*(float)Math.PI/2,0);
+                break;
+            case "rv":
+                walleNod.move(moveX*width + width/2, moveY*height, (1+moveZ)*width);
+                walleNod.rotate(0,(float)Math.PI/2,0);
+                break;
+            
+        }
+        
+
+
+        CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
+        RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
+        walle.addControl(walleBod);
+        bulletAppState.getPhysicsSpace().add(walleBod);
+    }
+    
+    void addHalfWall(float height, float width, float moveX, float moveY, float moveZ, Node world, String version){
+        Quad quad = new Quad(width/2,height);
+        Geometry walle = new Geometry("Wall-e",quad);
+        Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
+
+        Texture image = assetManager.loadTexture("Textures/BrickWall.jpg");
+
+        walleMat.setTexture("DiffuseMap", image);
+        walleMat.setBoolean("UseMaterialColors",true);
+        walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
+        walleMat.setColor("Specular",ColorRGBA.White); // for shininess
+        walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
+        walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
+        walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
+        System.out.println(walleMat.getParams());
+        walle.setMaterial(walleMat);
+        Node walleNod = new Node("walleNod");
+        world.attachChild(walleNod);
+        walleNod.attachChild(walle);
+        
+        
+        switch(version){
+            case "ldh":
+                walleNod.move(moveX*width , moveY*height, moveZ*width + width/2);
+                walleNod.rotate(0,0,0);
+                break;
+            case "luh":
+                walleNod.move((moveX+1)*width - width/2, moveY*height, moveZ*width + width/2);
+                walleNod.rotate(0,(float)Math.PI,0);
+                break;
+            case "rdh":
+                walleNod.move(moveX*width + width/2, moveY*height, moveZ*width + width/2);
+                walleNod.rotate(0,0,0);
+                break;
+            case "ruh":
+                walleNod.move((moveX+1)*width, moveY*height, moveZ*width + width/2);
+                walleNod.rotate(0,(float)Math.PI,0);
+                break;
+            case "tlv":
+                walleNod.move(moveX*width + width/2, moveY*height, moveZ*width);
+                walleNod.rotate(0,3*(float)Math.PI/2,0);
+                break;
+            case "trv":
+                walleNod.move(moveX*width + width/2, moveY*height, (1+moveZ)*width - width/2);
+                walleNod.rotate(0,(float)Math.PI/2,0);
+                break;    
+            case "blv":
+                walleNod.move(moveX*width + width/2, moveY*height, moveZ*width + width/2);
+                walleNod.rotate(0,3*(float)Math.PI/2,0);
+                break;
+            case "brv":
+                walleNod.move(moveX*width + width/2, moveY*height, (1+moveZ)*width);
+                walleNod.rotate(0,(float)Math.PI/2,0);
+                break;
         }
     }
     
-    
-    rootNode.attachChild(world);
-    world.rotate(0,(float)Math.PI/2,0);
-  }
 
-    void addFlatHorizontalWall(float height, float width, float moveX, float moveY, float moveZ, float rotX, float rotY, float rotZ, Node world){
-    Quad quad = new Quad(width,height);
-    Geometry walle = new Geometry("Wall-e",quad);
-    Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
     
-    Texture image = assetManager.loadTexture("Textures/DuplicatedBrickWall.jpg");
-    
-    walleMat.setTexture("DiffuseMap", image);
-    walleMat.setBoolean("UseMaterialColors",true);
-    walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
-    walleMat.setColor("Specular",ColorRGBA.White); // for shininess
-    walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-    walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
-    walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-    System.out.println(walleMat.getParams());
-    walle.setMaterial(walleMat);
-    Node walleNod = new Node("walleNod");
-    world.attachChild(walleNod);
-    walleNod.attachChild(walle);
-    walleNod.rotate(rotX, rotY, rotZ);
-    walleNod.move(moveX*width - width/2, moveY*height, moveZ*width);
-    
-    
-    CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
-    RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
-    walle.addControl(walleBod);
-    bulletAppState.getPhysicsSpace().add(walleBod);
-    
-    
-    
-        
-    
-}
-    
-    void addFlatVerticalWall(float height, float width, float moveX, float moveY, float moveZ, float rotX, float rotY, float rotZ, Node world){
-    Quad quad = new Quad(width,height);
-    Geometry walle = new Geometry("Wall-e",quad);
-    Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
-    Texture image = assetManager.loadTexture("Textures/DuplicatedBrickWall.jpg");
-    
-    walleMat.setTexture("DiffuseMap", image);
-    walleMat.setBoolean("UseMaterialColors",true);
-    walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
-    walleMat.setColor("Specular",ColorRGBA.White); // for shininess
-    walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-    walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
-    walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-    System.out.println(walleMat.getParams());
-    walle.setMaterial(walleMat);
-    Node walleNod = new Node("walleNod");
-    world.attachChild(walleNod);
-    walleNod.attachChild(walle);
-    walleNod.rotate(rotX, rotY, rotZ);
-    walleNod.move(moveX*width, moveY*height, moveZ*width - width/2);
-    
-    
-    CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
-    RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
-    walle.addControl(walleBod);
-    bulletAppState.getPhysicsSpace().add(walleBod);
-    
-}
-    
-    void addLeftHalfFlatHorizontalWall(float height, float width, float moveX, float moveY, float moveZ, float rotX, float rotY, float rotZ, Node world){
-    Quad quad = new Quad(width/2,height);
-    Geometry walle = new Geometry("Wall-e",quad);
-    Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
-    Texture image = assetManager.loadTexture("Textures/BrickWall.jpg");
-    
-    walleMat.setTexture("DiffuseMap", image);
-    walleMat.setBoolean("UseMaterialColors",true);
-    walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
-    walleMat.setColor("Specular",ColorRGBA.White); // for shininess
-    walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-    walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
-    walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-    System.out.println(walleMat.getParams());
-    walle.setMaterial(walleMat);
-    Node walleNod = new Node("walleNod");
-    world.attachChild(walleNod);
-    walleNod.attachChild(walle);
-    walleNod.rotate(rotX, rotY, rotZ);
-    walleNod.move(moveX*width - width/2, moveY*height, moveZ*width);
-    
-    
-    CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
-    RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
-    walle.addControl(walleBod);
-    bulletAppState.getPhysicsSpace().add(walleBod);
-    
-}
-    void addRightHalfFlatHorizontalWall(float height, float width, float moveX, float moveY, float moveZ, float rotX, float rotY, float rotZ, Node world){
-    Quad quad = new Quad(width/2,height);
-    Geometry walle = new Geometry("Wall-e",quad);
-    Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
-    Texture image = assetManager.loadTexture("Textures/BrickWall.jpg");
-    
-    walleMat.setTexture("DiffuseMap", image);
-    walleMat.setBoolean("UseMaterialColors",true);
-    walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
-    walleMat.setColor("Specular",ColorRGBA.White); // for shininess
-    walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-    walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
-    walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-    System.out.println(walleMat.getParams());
-    walle.setMaterial(walleMat);
-    Node walleNod = new Node("walleNod");
-    world.attachChild(walleNod);
-    walleNod.attachChild(walle);
-    walleNod.rotate(rotX, rotY, rotZ);
-    walleNod.move(moveX*width - width/2, moveY*height, moveZ*width - width/2);
-    
-    
-    CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
-    RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
-    walle.addControl(walleBod);
-    bulletAppState.getPhysicsSpace().add(walleBod);
-    
-}
-    
-    
-    
-    void addTopHalfFlatVerticalWall(float height, float width, float moveX, float moveY, float moveZ, float rotX, float rotY, float rotZ, Node world){
-    Quad quad = new Quad(width/2,height);
-    Geometry walle = new Geometry("Wall-e",quad);
-    Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
-    Texture image = assetManager.loadTexture("Textures/BrickWall.jpg");
-    
-    walleMat.setTexture("DiffuseMap", image);
-    walleMat.setBoolean("UseMaterialColors",true);
-    walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
-    walleMat.setColor("Specular",ColorRGBA.White); // for shininess
-    walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-    walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
-    walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-    System.out.println(walleMat.getParams());
-    walle.setMaterial(walleMat);
-    Node walleNod = new Node("walleNod");
-    world.attachChild(walleNod);
-    walleNod.attachChild(walle);
-    walleNod.rotate(rotX, rotY, rotZ);
-    walleNod.move(moveX*width, moveY*height, moveZ*width - width/2);
-    
-    
-    CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
-    RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
-    walle.addControl(walleBod);
-    bulletAppState.getPhysicsSpace().add(walleBod);
-    
-}
-    
-    void addBottomHalfFlatVerticalWall(float height, float width, float moveX, float moveY, float moveZ, float rotX, float rotY, float rotZ, Node world){
-    Quad quad = new Quad(width/2,height);
-    Geometry walle = new Geometry("Wall-e",quad);
-    Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
-    Texture image = assetManager.loadTexture("Textures/BrickWall.jpg");
-    
-    walleMat.setTexture("DiffuseMap", image);
-    walleMat.setBoolean("UseMaterialColors",true);
-    walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
-    walleMat.setColor("Specular",ColorRGBA.White); // for shininess
-    walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-    walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
-    walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-    System.out.println(walleMat.getParams());
-    walle.setMaterial(walleMat);
-    Node walleNod = new Node("walleNod");
-    world.attachChild(walleNod);
-    walleNod.attachChild(walle);
-    walleNod.rotate(rotX, rotY, rotZ);
-    walleNod.move(moveX*width, moveY*height, moveZ*width - width/2);
-    
-    
-    CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
-    RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
-    walle.addControl(walleBod);
-    bulletAppState.getPhysicsSpace().add(walleBod);
-    
-}
     
 
 void addCubeRed(float x, float y, float z){

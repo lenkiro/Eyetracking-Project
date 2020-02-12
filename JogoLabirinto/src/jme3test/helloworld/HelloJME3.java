@@ -104,7 +104,7 @@ public class HelloJME3 extends SimpleApplication
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         //bulletAppState.setDebugEnabled(true);
-
+        
         // We re-use the flyby camera for rotation, while positioning is handled by physics
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
         flyCam.setMoveSpeed(100);
@@ -171,10 +171,10 @@ public class HelloJME3 extends SimpleApplication
         // added to the PhysicsSpace.
         player.setGravity(new Vector3f(0,-30f,0));
 
-        char[][] mazeTest = {{'9','1','1','B'},  //                                     _       _   
+        char[][] mazeTest = {{'9','2','1','B'},  //                                     _       _   
                              {'2','8','A','3'},  //0: __ v  2: | <  4:I_^>  6: _I^<  8:I v>  A:  I v< 
                              {'2','4','6','3'},  //                                     _       _
-                             {'5','0','0','7'}}; //1: __ ^  3: | >  5:I_v<  7: _Iv>  9:I ^<  B:  I ^>
+                             {'5','0','0','2'}}; //1: __ ^  3: | >  5:I_v<  7: _Iv>  9:I ^<  B:  I ^>
         char[][] maze2 = {{'0','4','5','0'},
                           {'0','A','B','0'},
                           {'0','0','0','0'},
@@ -366,6 +366,11 @@ public class HelloJME3 extends SimpleApplication
                 walleNod.rotate(0,(float)Math.PI/2,0);
                 break;
         }
+        
+        CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
+        RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
+        walle.addControl(walleBod);
+        bulletAppState.getPhysicsSpace().add(walleBod);
     }
     
 

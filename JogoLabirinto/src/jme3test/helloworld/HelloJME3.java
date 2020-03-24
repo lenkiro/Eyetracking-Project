@@ -49,13 +49,21 @@ package jme3test.helloworld;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.bullet.PhysicsSpace;
+import static com.jme3.bullet.PhysicsSpace.getPhysicsSpace;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
+import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.control.CharacterControl;
+import com.jme3.bullet.control.GhostControl;
+import com.jme3.bullet.control.PhysicsControl;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
@@ -63,6 +71,7 @@ import com.jme3.material.Material;
 import com.jme3.material.RenderState.FaceCullMode;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
+import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
@@ -73,6 +82,10 @@ import com.jme3.terrain.heightmap.AbstractHeightMap;
 import com.jme3.terrain.heightmap.ImageBasedHeightMap;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
+import de.lessvoid.nifty.Nifty;
+import de.lessvoid.nifty.screen.Screen;
+import de.lessvoid.nifty.screen.ScreenController;
+import java.util.Random;
 
 /**
  * Example 9 - How to make walls and floors solid.
@@ -80,7 +93,7 @@ import com.jme3.texture.Texture.WrapMode;
  * @author normen, with edits by Zathras
  */
 public class HelloJME3 extends SimpleApplication
-        implements ActionListener {
+        implements ActionListener, ScreenController, PhysicsCollisionListener {
 
     private Spatial terrain;
     private BulletAppState bulletAppState;
@@ -93,13 +106,50 @@ public class HelloJME3 extends SimpleApplication
     //They here to avoid instanciating new vectors on each frame
     private Vector3f camDir = new Vector3f();
     private Vector3f camLeft = new Vector3f();
+    private Nifty nifty;
+    private GhostControl ghostControl;
+    private Node collisionNode;
 
     public static void main(String[] args) {
       HelloJME3 app = new HelloJME3();
+      app.setPauseOnLostFocus(false);
       app.start();
     }
 
     public void simpleInitApp() {
+        
+        setUpKeys();
+        setUpLight();
+        
+        begin();
+        addCubeCollision(30*3,2,30*1);
+        
+
+        char[][] mazeTest = {{'9','2','1','B'},  //                                     _       _   
+                             {'2','8','A','3'},  //0: __ v  2: | <  4:I_^>  6: _I^<  8:I v>  A:  I v< 
+                             {'2','4','6','3'},  //                                     _       _
+                             {'5','0','0','2'}}; //1: __ ^  3: | >  5:I_v<  7: _Iv>  9:I ^<  B:  I ^>
+        char[][] maze2 = {{'0','4','5','0'},
+                          {'0','A','B','0'},
+                          {'0','0','0','0'},
+                          {'1','0','1','0'}};
+
+
+
+
+        Node world = new Node("world");
+        createMaze(mazeTest,30,30,world); 
+
+        addCubeBlue(0,0,0);
+        addCubeBlue(2,0,0);
+        addCubeBlue(4,0,0);
+        addCubeRed(0,0,2);
+        addCubeRed(0,0,4);       
+        
+        
+    }
+    
+    void begin(){
         /** Set up Physics */
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
@@ -108,8 +158,7 @@ public class HelloJME3 extends SimpleApplication
         // We re-use the flyby camera for rotation, while positioning is handled by physics
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
         flyCam.setMoveSpeed(100);
-        setUpKeys();
-        setUpLight();
+
 
         // We load the scene from the zip file and adjust its size.
 
@@ -170,33 +219,23 @@ public class HelloJME3 extends SimpleApplication
         // You can change the gravity of individual physics objects after they are
         // added to the PhysicsSpace.
         player.setGravity(new Vector3f(0,-30f,0));
-
-        char[][] mazeTest = {{'9','2','1','B'},  //                                     _       _   
-                             {'2','8','A','3'},  //0: __ v  2: | <  4:I_^>  6: _I^<  8:I v>  A:  I v< 
-                             {'2','4','6','3'},  //                                     _       _
-                             {'5','0','0','2'}}; //1: __ ^  3: | >  5:I_v<  7: _Iv>  9:I ^<  B:  I ^>
-        char[][] maze2 = {{'0','4','5','0'},
-                          {'0','A','B','0'},
-                          {'0','0','0','0'},
-                          {'1','0','1','0'}};
-
-
-
-
-        Node world = new Node("world");
-        createMaze(mazeTest,30,30,world); 
-
-        addCubeBlue(0,0,0);
-        addCubeBlue(2,0,0);
-        addCubeBlue(4,0,0);
-        addCubeRed(0,0,2);
-        addCubeRed(0,0,4);                                         
-
     }
 
+    void resetAll(){
+        rootNode.detachAllChildren();
+    }
 
-
-
+    void randomMaze(int height, int width){
+        Random rand = new Random();
+        char[] caracteres = {'0','1','2','3','4','5','6','7','8','9','A','B'};
+        char[][] maze = new char [6][6];
+        for(int i = 0; i<maze.length; i++){
+            for(int j = 0; j<maze[i].length; j++){
+                maze[i][j] = caracteres[rand.nextInt(caracteres.length)];
+            }
+        }
+        createMaze(maze, height, width, new Node("world"));
+    }
   
     
     
@@ -276,7 +315,7 @@ public class HelloJME3 extends SimpleApplication
         walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
         walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
         walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-        System.out.println(walleMat.getParams());
+        //System.out.println(walleMat.getParams());
         walle.setMaterial(walleMat);
         Node walleNod = new Node("walleNod");
         world.attachChild(walleNod);
@@ -325,7 +364,7 @@ public class HelloJME3 extends SimpleApplication
         walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
         walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
         walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-        System.out.println(walleMat.getParams());
+        //System.out.println(walleMat.getParams());
         walle.setMaterial(walleMat);
         Node walleNod = new Node("walleNod");
         world.attachChild(walleNod);
@@ -373,16 +412,18 @@ public class HelloJME3 extends SimpleApplication
         bulletAppState.getPhysicsSpace().add(walleBod);
     }
     
-
-    
-    
-
-void addCubeRed(float x, float y, float z){
-    Box b = new Box(1, 20, 1);
+    void addCubeCollision(float x, float y, float z){
+        ghostControl = new GhostControl(new BoxCollisionShape(new Vector3f(1,1,1)));  // a box-shaped ghost
+        Node cNode = new Node("cNode");
+        // Optional: Add a Geometry, or other controls, to the node if you need to
+        
+        // attach everything to activate it
+        Box b = new Box(1, 1, 1);
         Geometry geom = new Geometry("Box", b);
-        Node cNode = new Node("cNode"); 
+        
         cNode.attachChild(geom);
         cNode.move(x, y, z);
+        cNode.addControl(ghostControl);                         // the ghost follows this node
         
         
         
@@ -392,9 +433,37 @@ void addCubeRed(float x, float y, float z){
         rootNode.attachChild(cNode);
         
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.Red);
+        mat.setColor("Color", ColorRGBA.Gray);
         geom.setMaterial(mat);
         bulletAppState.getPhysicsSpace().add(thing);
+        
+        getPhysicsSpace().add(ghostControl);
+        System.out.println(ghostControl.getOverlappingCount());
+        
+        /*
+        */
+    }
+    
+    
+
+void addCubeRed(float x, float y, float z){
+    Box b = new Box(1, 20, 1);
+    Geometry geom = new Geometry("Box", b);
+    Node cNode = new Node("cNode"); 
+    cNode.attachChild(geom);
+    cNode.move(x, y, z);
+        
+        
+        
+    CollisionShape wallShape = CollisionShapeFactory.createBoxShape(geom);
+    RigidBodyControl thing = new RigidBodyControl(wallShape, 0);
+        
+    rootNode.attachChild(cNode);
+        
+    Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+    mat.setColor("Color", ColorRGBA.Red);
+    geom.setMaterial(mat);
+    bulletAppState.getPhysicsSpace().add(thing);
 }
 
 void addCubeBlue(float x, float y, float z){
@@ -484,9 +553,60 @@ void addCubeBlue(float x, float y, float z){
         if (down) {
             walkDirection.addLocal(camDir.negate());
         }
-        System.out.println(player.getPhysicsLocation());
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
+        System.out.println(ghostControl.getOverlappingObjects());
+        if(ghostControl.getOverlappingCount() == 1){
+            resetAll();
+            begin();
+            randomMaze(20,20);
+            addCubeCollision(20*5,2,20*5);
+        }
+        
         
     }
+    
+    private PhysicsSpace getPhysicsSpace(){
+        return bulletAppState.getPhysicsSpace();
+    }
+    
+    @Override
+    public void bind(Nifty nifty, Screen screen) {
+        System.out.println("bind( " + screen.getScreenId() + ")");
+    }
+
+    @Override
+    public void onStartScreen() {
+        System.out.println("onStartScreen");
+    }
+
+    @Override
+    public void onEndScreen() {
+        System.out.println("onEndScreen");
+    }
+
+    public void quit(){
+        nifty.gotoScreen("end");
+    }
+
+    @Override
+    public void collision(PhysicsCollisionEvent event) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    
 }
+
+
+
+/*
+13/03
+Estudar Nifty por fora
+Montar troca de mundos na mão
+Se não conseguir fazer if detectar colisão, fazer detectar posição no mundo
+24/03
+Fazer o código receber labirintos por arquivos txt
+Fazer txt de configuração (definir se, após uma fase, volta ao 'menu')
+Resolver problema dos cubos vermelhos e da luz
+Implementar movimentação mais realista
+*/

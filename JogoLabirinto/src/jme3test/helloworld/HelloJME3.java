@@ -56,6 +56,7 @@ import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
 import com.jme3.bullet.collision.shapes.CollisionShape;
+import com.jme3.bullet.control.BetterCharacterControl;
 import com.jme3.bullet.control.CharacterControl;
 import com.jme3.bullet.control.GhostControl;
 import com.jme3.bullet.control.PhysicsControl;
@@ -86,6 +87,11 @@ import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
 import java.util.Random;
+import java.util.Scanner;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Example 9 - How to make walls and floors solid.
@@ -99,6 +105,8 @@ public class HelloJME3 extends SimpleApplication
     private BulletAppState bulletAppState;
     private RigidBodyControl landscape;
     private CharacterControl player;
+    float airTime = 0;
+    //private BetterCharacterControl player;
     private Vector3f walkDirection = new Vector3f();
     private boolean left = false, right = false, up = false, down = false;
 
@@ -107,10 +115,16 @@ public class HelloJME3 extends SimpleApplication
     private Vector3f camDir = new Vector3f();
     private Vector3f camLeft = new Vector3f();
     private Nifty nifty;
-    private GhostControl ghostControl;
+    private GhostControl ghostControlToHub;
+    private GhostControl ghostControlNextLevel;
     private Node collisionNode;
+    private int fase;
+    private int noMapas;
+    private Scanner scan;
+    private Scanner config;
+    private boolean hubWorld;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException{
       HelloJME3 app = new HelloJME3();
       app.setPauseOnLostFocus(false);
       app.start();
@@ -122,9 +136,26 @@ public class HelloJME3 extends SimpleApplication
         setUpLight();
         
         begin();
-        addCubeCollision(30*3,2,30*1);
+        ghostControlToHub = addCubeCollision(30*3,35,30*1);
         
-
+        ghostControlNextLevel = addCubeCollision(30*3,2,30*1);
+        
+        
+        
+        try {
+            File mapFile = new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\mapa.txt");
+            this.scan = new Scanner(mapFile);
+            this.noMapas = scan.nextInt();
+            
+            this.config = new Scanner(new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\config.txt"));
+            config.findInLine("hubWorld=");
+            this.hubWorld = config.nextBoolean();
+            
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(HelloJME3.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        
         char[][] mazeTest = {{'9','2','1','B'},  //                                     _       _   
                              {'2','8','A','3'},  //0: __ v  2: | <  4:I_^>  6: _I^<  8:I v>  A:  I v< 
                              {'2','4','6','3'},  //                                     _       _
@@ -137,8 +168,6 @@ public class HelloJME3 extends SimpleApplication
 
 
 
-        Node world = new Node("world");
-        createMaze(mazeTest,30,30,world); 
 
         addCubeBlue(0,0,0);
         addCubeBlue(2,0,0);
@@ -209,7 +238,9 @@ public class HelloJME3 extends SimpleApplication
         player.setJumpSpeed(20);
         player.setFallSpeed(30);
         player.setPhysicsLocation(new Vector3f(0, 10, 0));
-
+        player.setUp(new Vector3f(0, 1, 0)); 
+        //player = new BetterCharacterControl(1.5f, 6f, 1f); 
+        
         // We attach the scene and the player to the rootnode and the physics space,
         // to make them appear in the game world.
         rootNode.attachChild(terrain);
@@ -219,6 +250,26 @@ public class HelloJME3 extends SimpleApplication
         // You can change the gravity of individual physics objects after they are
         // added to the PhysicsSpace.
         player.setGravity(new Vector3f(0,-30f,0));
+    }
+    
+    void fileMaze(int height, int width){
+        this.fase++;
+        if(fase <= noMapas){
+            int colunas = scan.nextInt();
+            int linhas = scan.nextInt();
+            scan.nextLine();
+            char [][] labirinto = new char [linhas][colunas];
+            for(int y = 0;y<linhas;y++){
+                String s = scan.nextLine();
+                for(int x = 0; x<colunas;x++){
+                    labirinto[y][x] = s.charAt(x);
+                }
+            }
+        Node world = new Node("world");
+        createMaze(labirinto,30,30,world); 
+        }else{
+            randomMaze(height, width);
+        }
     }
 
     void resetAll(){
@@ -412,8 +463,9 @@ public class HelloJME3 extends SimpleApplication
         bulletAppState.getPhysicsSpace().add(walleBod);
     }
     
-    void addCubeCollision(float x, float y, float z){
-        ghostControl = new GhostControl(new BoxCollisionShape(new Vector3f(1,1,1)));  // a box-shaped ghost
+    GhostControl addCubeCollision(float x, float y, float z){
+        GhostControl ghostControl = new GhostControl(new BoxCollisionShape(new Vector3f(1,1,1)));  // a box-shaped ghost
+        
         Node cNode = new Node("cNode");
         // Optional: Add a Geometry, or other controls, to the node if you need to
         
@@ -438,7 +490,7 @@ public class HelloJME3 extends SimpleApplication
         bulletAppState.getPhysicsSpace().add(thing);
         
         getPhysicsSpace().add(ghostControl);
-        System.out.println(ghostControl.getOverlappingCount());
+        return ghostControl;
         
         /*
         */
@@ -525,7 +577,7 @@ void addCubeBlue(float x, float y, float z){
     } else if (binding.equals("Down")) {
       down = isPressed;
     } else if (binding.equals("Jump")) {
-      if (isPressed) { player.jump(new Vector3f(0,20f,0));}
+      if (isPressed && player.onGround()) { player.jump(new Vector3f(0,20f,0));}
     }
   }
 
@@ -552,15 +604,34 @@ void addCubeBlue(float x, float y, float z){
         }
         if (down) {
             walkDirection.addLocal(camDir.negate());
+        }if (!player.onGround()) {
+            airTime = airTime + tpf;
+        } else {
+            airTime = 0;
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
-        System.out.println(ghostControl.getOverlappingObjects());
-        if(ghostControl.getOverlappingCount() == 1){
+        
+        
+        if(ghostControlToHub.getOverlappingCount() == 1){
             resetAll();
             begin();
-            randomMaze(20,20);
-            addCubeCollision(20*5,2,20*5);
+            
+            ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
+            ghostControlToHub = addCubeCollision(20*5,35,20*5);
+        }
+        if(ghostControlNextLevel.getOverlappingCount() == 1){
+            resetAll();
+            begin();
+            fileMaze(20,20);
+            if(hubWorld){
+                ghostControlToHub = addCubeCollision(20*5,2,20*5);
+                ghostControlNextLevel = addCubeCollision(20*5,35,20*5);
+            }
+            else{
+                ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
+                ghostControlToHub = addCubeCollision(20*5,35,20*5);
+            }
         }
         
         

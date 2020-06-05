@@ -123,6 +123,8 @@ public class HelloJME3 extends SimpleApplication
     private Scanner scan;
     private Scanner config;
     private boolean hubWorld;
+    private char[][][] mapas;
+    private GhostControl[] entrances;
 
     public static void main(String[] args) throws FileNotFoundException{
       HelloJME3 app = new HelloJME3();
@@ -135,17 +137,29 @@ public class HelloJME3 extends SimpleApplication
         setUpKeys();
         setUpLight();
         
-        begin();
-        ghostControlToHub = addCubeCollision(30*3,35,30*1);
         
-        ghostControlNextLevel = addCubeCollision(30*3,2,30*1);
+        //ghostControlToHub = addCubeCollision(30*3,35,30*1);
         
+        //ghostControlNextLevel = addCubeCollision(30*3,2,30*1);
         
         
         try {
             File mapFile = new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\mapa.txt");
             this.scan = new Scanner(mapFile);
             this.noMapas = scan.nextInt();
+            this.mapas = new char[noMapas][][];
+            for(int i = 0; i<this.noMapas;i++){
+                int colunas = scan.nextInt();
+                int linhas = scan.nextInt();
+                scan.nextLine();
+                this.mapas[i]  = new char [linhas][colunas];
+                for(int y = 0;y<linhas;y++){
+                    String s = scan.nextLine();
+                    for(int x = 0; x<colunas;x++){
+                        this.mapas[i][y][x] = s.charAt(x);
+                    }
+                }
+            }
             
             this.config = new Scanner(new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\config.txt"));
             config.findInLine("hubWorld=");
@@ -154,6 +168,9 @@ public class HelloJME3 extends SimpleApplication
         } catch (FileNotFoundException ex) {
             Logger.getLogger(HelloJME3.class.getName()).log(Level.SEVERE, null, ex);
         }
+        begin();
+        if(this.hubWorld) createHubworldSelection();
+        else ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
         
         
         char[][] mazeTest = {{'9','2','1','B'},  //                                     _       _   
@@ -176,6 +193,13 @@ public class HelloJME3 extends SimpleApplication
         addCubeRed(0,0,4);       
         
         
+    }
+    
+    void createHubworldSelection(){
+        entrances = new GhostControl [this.noMapas];
+        for(int i=0; i<noMapas;i++){
+            this.entrances[i] = addCubeCollision(30*i,2,-30*2);
+        }
     }
     
     void begin(){
@@ -255,20 +279,9 @@ public class HelloJME3 extends SimpleApplication
     void fileMaze(int height, int width){
         this.fase++;
         if(fase <= noMapas){
-            int colunas = scan.nextInt();
-            int linhas = scan.nextInt();
-            scan.nextLine();
-            char [][] labirinto = new char [linhas][colunas];
-            for(int y = 0;y<linhas;y++){
-                String s = scan.nextLine();
-                for(int x = 0; x<colunas;x++){
-                    labirinto[y][x] = s.charAt(x);
-                }
-            }
-        Node world = new Node("world");
-        createMaze(labirinto,30,30,world); 
+            Node world = new Node("world");
+            createMaze(mapas[this.fase-1],30,30,world); 
         }else{
-            randomMaze(height, width);
         }
     }
 
@@ -485,7 +498,7 @@ public class HelloJME3 extends SimpleApplication
         rootNode.attachChild(cNode);
         
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.Gray);
+        mat.setColor("Color", ColorRGBA.Black);
         geom.setMaterial(mat);
         bulletAppState.getPhysicsSpace().add(thing);
         
@@ -611,28 +624,41 @@ void addCubeBlue(float x, float y, float z){
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
-        
-        
-        if(ghostControlToHub.getOverlappingCount() == 1){
-            resetAll();
-            begin();
-            
-            ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
-            ghostControlToHub = addCubeCollision(20*5,35,20*5);
-        }
-        if(ghostControlNextLevel.getOverlappingCount() == 1){
-            resetAll();
-            begin();
-            fileMaze(20,20);
-            if(hubWorld){
-                ghostControlToHub = addCubeCollision(20*5,2,20*5);
-                ghostControlNextLevel = addCubeCollision(20*5,35,20*5);
-            }
-            else{
-                ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
-                ghostControlToHub = addCubeCollision(20*5,35,20*5);
+        if(hubWorld){
+            for(int i = 0; i<this.noMapas;i++){
+                if(entrances[i] != null){
+                    if(entrances[i].getOverlappingCount() == 1){
+                        resetAll();
+                        begin();
+                        Node world = new Node("world");
+                        createMaze(this.mapas[i],20,20,world);
+                        ghostControlToHub = addCubeCollision(20*5,2,20*5);
+                    }
+                }
             }
         }
+        if(ghostControlToHub != null)
+            if(ghostControlToHub.getOverlappingCount() == 1){
+                resetAll();
+                begin();
+                createHubworldSelection();
+                //ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
+                //ghostControlToHub = addCubeCollision(20*5,35,20*5);
+            }
+        if(ghostControlNextLevel != null)
+            if(ghostControlNextLevel.getOverlappingCount() == 1){
+                resetAll();
+                begin();
+                fileMaze(20,20);
+                if(hubWorld){
+                    ghostControlToHub = addCubeCollision(20*5,2,20*5);
+                    //ghostControlNextLevel = addCubeCollision(20*5,35,20*5);
+                }
+                else{
+                    ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
+                    //ghostControlToHub = addCubeCollision(20*5,35,20*5);
+                }
+            }
         
         
     }
@@ -680,4 +706,7 @@ Fazer o código receber labirintos por arquivos txt
 Fazer txt de configuração (definir se, após uma fase, volta ao 'menu')
 Resolver problema dos cubos vermelhos e da luz
 Implementar movimentação mais realista
+04/06
+Fazer mapas mais complexos com o esquema de chave para liberar saída
+Ver como capturar todos os inputs de teclas e mouse
 */

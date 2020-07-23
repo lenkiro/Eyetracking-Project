@@ -117,14 +117,17 @@ public class HelloJME3 extends SimpleApplication
     private Nifty nifty;
     private GhostControl ghostControlToHub;
     private GhostControl ghostControlNextLevel;
+    private GhostControl ghostControlMainKey;
     private Node collisionNode;
     private int fase;
     private int noMapas;
     private Scanner scan;
     private Scanner config;
     private boolean hubWorld;
-    private char[][][] mapas;
+    private boolean mainKey = true;
+    private Mapa[] mapas;
     private GhostControl[] entrances;
+    
 
     public static void main(String[] args) throws FileNotFoundException{
       HelloJME3 app = new HelloJME3();
@@ -147,18 +150,23 @@ public class HelloJME3 extends SimpleApplication
             File mapFile = new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\mapa.txt");
             this.scan = new Scanner(mapFile);
             this.noMapas = scan.nextInt();
-            this.mapas = new char[noMapas][][];
+            this.mapas = new Mapa[noMapas];
             for(int i = 0; i<this.noMapas;i++){
                 int colunas = scan.nextInt();
                 int linhas = scan.nextInt();
                 scan.nextLine();
-                this.mapas[i]  = new char [linhas][colunas];
+                this.mapas[i] = new Mapa();
+                this.mapas[i].matriz  = new char [linhas][colunas];
                 for(int y = 0;y<linhas;y++){
                     String s = scan.nextLine();
                     for(int x = 0; x<colunas;x++){
-                        this.mapas[i][y][x] = s.charAt(x);
+                        this.mapas[i].matriz[y][x] = s.charAt(x);
                     }
                 }
+                this.mapas[i].xchave = scan.nextInt();
+                this.mapas[i].ychave = scan.nextInt();
+                this.mapas[i].xobjetivo = scan.nextInt();
+                this.mapas[i].yobjetivo = scan.nextInt();
             }
             
             this.config = new Scanner(new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\config.txt"));
@@ -170,7 +178,7 @@ public class HelloJME3 extends SimpleApplication
         }
         begin();
         if(this.hubWorld) createHubworldSelection();
-        else ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
+        else ghostControlNextLevel = addCubeCollision(20*5,2,20*5,"Black");
         
         
         char[][] mazeTest = {{'9','2','1','B'},  //                                     _       _   
@@ -198,7 +206,7 @@ public class HelloJME3 extends SimpleApplication
     void createHubworldSelection(){
         entrances = new GhostControl [this.noMapas];
         for(int i=0; i<noMapas;i++){
-            this.entrances[i] = addCubeCollision(30*i,2,-30*2);
+            this.entrances[i] = addCubeCollision(30*i,2,-30*2,"Black");
         }
     }
     
@@ -280,7 +288,7 @@ public class HelloJME3 extends SimpleApplication
         this.fase++;
         if(fase <= noMapas){
             Node world = new Node("world");
-            createMaze(mapas[this.fase-1],30,30,world); 
+            createMaze(mapas[this.fase-1].matriz,30,30,world); 
         }else{
         }
     }
@@ -476,7 +484,7 @@ public class HelloJME3 extends SimpleApplication
         bulletAppState.getPhysicsSpace().add(walleBod);
     }
     
-    GhostControl addCubeCollision(float x, float y, float z){
+    GhostControl addCubeCollision(float x, float y, float z,String color){
         GhostControl ghostControl = new GhostControl(new BoxCollisionShape(new Vector3f(1,1,1)));  // a box-shaped ghost
         
         Node cNode = new Node("cNode");
@@ -498,7 +506,10 @@ public class HelloJME3 extends SimpleApplication
         rootNode.attachChild(cNode);
         
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.Black);
+        if(color.equals("Red")) mat.setColor("Color", ColorRGBA.Red);
+        else if(color.equals("Blue")) mat.setColor("Color", ColorRGBA.Blue);
+        else if(color.equals("Brown")) mat.setColor("Color", ColorRGBA.Brown);
+        else mat.setColor("Color", ColorRGBA.Black);
         geom.setMaterial(mat);
         bulletAppState.getPhysicsSpace().add(thing);
         
@@ -624,6 +635,7 @@ void addCubeBlue(float x, float y, float z){
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
+        System.out.println(mainKey);
         if(hubWorld){
             for(int i = 0; i<this.noMapas;i++){
                 if(entrances[i] != null){
@@ -631,14 +643,21 @@ void addCubeBlue(float x, float y, float z){
                         resetAll();
                         begin();
                         Node world = new Node("world");
-                        createMaze(this.mapas[i],20,20,world);
-                        ghostControlToHub = addCubeCollision(20*5,2,20*5);
+                        createMaze(this.mapas[i].matriz,20,20,world);
+                        ghostControlToHub = addCubeCollision(20*mapas[i].xobjetivo,2,20*mapas[i].yobjetivo,"Black");
+                        ghostControlMainKey = addCubeCollision(20*mapas[i].xchave,2,20*mapas[i].ychave,"Brown");
+                        this.mainKey = false;
                     }
                 }
             }
         }
+        if(ghostControlMainKey != null)
+            if(ghostControlMainKey.getOverlappingCount() == 1){
+                this.mainKey = true;
+                getPhysicsSpace().remove(ghostControlMainKey.getUserObject());
+            }
         if(ghostControlToHub != null)
-            if(ghostControlToHub.getOverlappingCount() == 1){
+            if(ghostControlToHub.getOverlappingCount() == 1 && this.mainKey == true){
                 resetAll();
                 begin();
                 createHubworldSelection();
@@ -646,21 +665,16 @@ void addCubeBlue(float x, float y, float z){
                 //ghostControlToHub = addCubeCollision(20*5,35,20*5);
             }
         if(ghostControlNextLevel != null)
-            if(ghostControlNextLevel.getOverlappingCount() == 1){
+            if(ghostControlNextLevel.getOverlappingCount() == 1 && this.mainKey){
                 resetAll();
                 begin();
+                //ghostControlToHub = addCubeCollision(20*5,35,20*5);
                 fileMaze(20,20);
-                if(hubWorld){
-                    ghostControlToHub = addCubeCollision(20*5,2,20*5);
-                    //ghostControlNextLevel = addCubeCollision(20*5,35,20*5);
-                }
-                else{
-                    ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
-                    //ghostControlToHub = addCubeCollision(20*5,35,20*5);
-                }
+                if(this.fase < this.noMapas)
+                ghostControlMainKey = addCubeCollision(20*mapas[this.fase -1].xchave,2,20*mapas[this.fase -1].ychave,"Brown");
+                ghostControlNextLevel = addCubeCollision(20*mapas[this.fase -1].xobjetivo,2,20*mapas[this.fase-1].yobjetivo,"Black");
+                this.mainKey = false;
             }
-        
-        
     }
     
     private PhysicsSpace getPhysicsSpace(){
@@ -692,6 +706,13 @@ void addCubeBlue(float x, float y, float z){
     }
 
     
+}
+
+class Mapa{
+    char[][] matriz;
+    int xchave,ychave,xobjetivo,yobjetivo;
+    public Mapa(){
+    }
 }
 
 

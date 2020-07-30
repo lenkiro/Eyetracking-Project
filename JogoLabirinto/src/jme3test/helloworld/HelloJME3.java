@@ -115,9 +115,9 @@ public class HelloJME3 extends SimpleApplication
     private Vector3f camDir = new Vector3f();
     private Vector3f camLeft = new Vector3f();
     private Nifty nifty;
-    private GhostControl ghostControlToHub;
-    private GhostControl ghostControlNextLevel;
-    private GhostControl ghostControlMainKey;
+    private Node ghostControlToHub;
+    private Node ghostControlNextLevel;
+    private Node ghostControlMainKey;
     private Node collisionNode;
     private int fase;
     private int noMapas;
@@ -126,8 +126,7 @@ public class HelloJME3 extends SimpleApplication
     private boolean hubWorld;
     private boolean mainKey = true;
     private Mapa[] mapas;
-    private GhostControl[] entrances;
-    
+    private Node[] entrances;
 
     public static void main(String[] args) throws FileNotFoundException{
       HelloJME3 app = new HelloJME3();
@@ -139,7 +138,6 @@ public class HelloJME3 extends SimpleApplication
         
         setUpKeys();
         setUpLight();
-        
         
         //ghostControlToHub = addCubeCollision(30*3,35,30*1);
         
@@ -204,7 +202,7 @@ public class HelloJME3 extends SimpleApplication
     }
     
     void createHubworldSelection(){
-        entrances = new GhostControl [this.noMapas];
+        entrances = new Node [this.noMapas];
         for(int i=0; i<noMapas;i++){
             this.entrances[i] = addCubeCollision(30*i,2,-30*2,"Black");
         }
@@ -484,7 +482,7 @@ public class HelloJME3 extends SimpleApplication
         bulletAppState.getPhysicsSpace().add(walleBod);
     }
     
-    GhostControl addCubeCollision(float x, float y, float z,String color){
+    Node addCubeCollision(float x, float y, float z,String color){
         GhostControl ghostControl = new GhostControl(new BoxCollisionShape(new Vector3f(1,1,1)));  // a box-shaped ghost
         
         Node cNode = new Node("cNode");
@@ -514,7 +512,7 @@ public class HelloJME3 extends SimpleApplication
         bulletAppState.getPhysicsSpace().add(thing);
         
         getPhysicsSpace().add(ghostControl);
-        return ghostControl;
+        return cNode;
         
         /*
         */
@@ -639,7 +637,7 @@ void addCubeBlue(float x, float y, float z){
         if(hubWorld){
             for(int i = 0; i<this.noMapas;i++){
                 if(entrances[i] != null){
-                    if(entrances[i].getOverlappingCount() == 1){
+                    if(entrances[i].getControl(GhostControl.class).getOverlappingCount() == 1){
                         resetAll();
                         begin();
                         Node world = new Node("world");
@@ -652,12 +650,12 @@ void addCubeBlue(float x, float y, float z){
             }
         }
         if(ghostControlMainKey != null)
-            if(ghostControlMainKey.getOverlappingCount() == 1){
+            if(ghostControlMainKey.getControl(GhostControl.class).getOverlappingCount() == 1){
                 this.mainKey = true;
-                getPhysicsSpace().remove(ghostControlMainKey.getUserObject());
+                ghostControlMainKey.removeFromParent();
             }
         if(ghostControlToHub != null)
-            if(ghostControlToHub.getOverlappingCount() == 1 && this.mainKey == true){
+            if(ghostControlToHub.getControl(GhostControl.class).getOverlappingCount() == 1 && this.mainKey == true){
                 resetAll();
                 begin();
                 createHubworldSelection();
@@ -665,7 +663,7 @@ void addCubeBlue(float x, float y, float z){
                 //ghostControlToHub = addCubeCollision(20*5,35,20*5);
             }
         if(ghostControlNextLevel != null)
-            if(ghostControlNextLevel.getOverlappingCount() == 1 && this.mainKey){
+            if(ghostControlNextLevel.getControl(GhostControl.class).getOverlappingCount() == 1 && this.mainKey){
                 resetAll();
                 begin();
                 //ghostControlToHub = addCubeCollision(20*5,35,20*5);
@@ -714,7 +712,6 @@ class Mapa{
     public Mapa(){
     }
 }
-
 
 
 /*

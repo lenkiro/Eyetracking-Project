@@ -86,10 +86,14 @@ import com.jme3.texture.Texture.WrapMode;
 import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
+import java.io.BufferedWriter;
 import java.util.Random;
 import java.util.Scanner;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -127,6 +131,7 @@ public class HelloJME3 extends SimpleApplication
     private boolean mainKey = true;
     private Mapa[] mapas;
     private Node[] entrances;
+    private BufferedWriter partidaBW;
 
     public static void main(String[] args) throws FileNotFoundException{
       HelloJME3 app = new HelloJME3();
@@ -135,7 +140,9 @@ public class HelloJME3 extends SimpleApplication
     }
 
     public void simpleInitApp() {
-        
+        Date date = new Date(); // This object contains the current date value
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        writeOnPartidaTxt(formatter.format(date));
         setUpKeys();
         setUpLight();
         
@@ -371,6 +378,21 @@ public class HelloJME3 extends SimpleApplication
         rootNode.attachChild(world);
     }
     
+    void writeOnPartidaTxt(String message){
+        
+        try{
+            File partida = new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\partida.txt");
+            FileWriter fw = new FileWriter(partida, true);
+            this.partidaBW = new BufferedWriter(fw);
+            partidaBW.write(message);
+            partidaBW.newLine();
+            partidaBW.close();
+        }
+        catch(Exception e){
+            System.out.println("Oh no");
+        }
+    }
+    
     void addWall(float height, float width, float moveX, float moveY, float moveZ, Node world, String version){
         Quad quad = new Quad(width,height);
         Geometry walle = new Geometry("Wall-e",quad);
@@ -599,7 +621,11 @@ void addCubeBlue(float x, float y, float z){
     } else if (binding.equals("Down")) {
       down = isPressed;
     } else if (binding.equals("Jump")) {
-      if (isPressed && player.onGround()) { player.jump(new Vector3f(0,20f,0));}
+        if (isPressed) {
+            if(player.onGround()){
+                player.jump(new Vector3f(0,20f,0));}
+          }
+          
     }
   }
 
@@ -622,18 +648,18 @@ void addCubeBlue(float x, float y, float z){
             walkDirection.addLocal(camLeft.negate());
         }
         if (up) {
-            walkDirection.addLocal(camDir);
+            walkDirection.addLocal(camDir.x,0,camDir.z);
         }
         if (down) {
-            walkDirection.addLocal(camDir.negate());
+            walkDirection.addLocal(-camDir.x,0,-camDir.z);
         }if (!player.onGround()) {
             airTime = airTime + tpf;
         } else {
-            airTime = 0;
+            airTime = 0; 
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
-        System.out.println(mainKey);
+        writeOnPartidaTxt(this.inputManager.getCursorPosition().toString() + " L: " + left+ " R: " + right + " U: " + up + " D: " + down);
         if(hubWorld){
             for(int i = 0; i<this.noMapas;i++){
                 if(entrances[i] != null){
@@ -727,4 +753,6 @@ Implementar movimentação mais realista
 04/06
 Fazer mapas mais complexos com o esquema de chave para liberar saída
 Ver como capturar todos os inputs de teclas e mouse
+30/07
+Fazer com que coordenadas da câmera e teclas pressionadas sejam gravadas num txt "partida"
 */

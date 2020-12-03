@@ -46,6 +46,11 @@ public class HelloJME3 extends SimpleApplication {
 
 package jme3test.helloworld;
 
+import com.jme3.animation.AnimChannel;
+import com.jme3.animation.AnimControl;
+import com.jme3.animation.Animation;
+import com.jme3.animation.LoopMode;
+import com.jme3.animation.SpatialTrack;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ZipLocator;
 import com.jme3.bullet.BulletAppState;
@@ -71,6 +76,7 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState.FaceCullMode;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
 import com.jme3.scene.Geometry;
@@ -94,6 +100,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -106,8 +113,10 @@ public class HelloJME3 extends SimpleApplication
         implements ActionListener, ScreenController, PhysicsCollisionListener {
 
     private Spatial terrain;
+    //private Spatial ceiling;
     private BulletAppState bulletAppState;
     private RigidBodyControl landscape;
+    //private RigidBodyControl ceilingLandscape;
     private CharacterControl player;
     float airTime = 0;
     //private BetterCharacterControl player;
@@ -123,7 +132,7 @@ public class HelloJME3 extends SimpleApplication
     private Node ghostControlNextLevel;
     private Node ghostControlMainKey;
     private Node collisionNode;
-    private int fase;
+    private int fase = 0;
     private int noMapas;
     private Scanner scan;
     private Scanner config;
@@ -169,9 +178,26 @@ public class HelloJME3 extends SimpleApplication
                     }
                 }
                 this.mapas[i].xchave = scan.nextInt();
-                this.mapas[i].ychave = scan.nextInt();
+                this.mapas[i].zchave = scan.nextInt();
                 this.mapas[i].xobjetivo = scan.nextInt();
-                this.mapas[i].yobjetivo = scan.nextInt();
+                this.mapas[i].zobjetivo = scan.nextInt();
+                int numOfGates = scan.nextInt();
+                this.mapas[i].numOfGates = numOfGates;
+                this.mapas[i].xkey = new int[numOfGates];
+                this.mapas[i].zkey = new int[numOfGates];
+                this.mapas[i].xgate = new int[numOfGates];
+                this.mapas[i].zgate = new int[numOfGates];
+                this.mapas[i].gate = new Node[numOfGates];
+                this.mapas[i].gateKey = new Node[numOfGates];
+                this.mapas[i].hasGateKey = new boolean[numOfGates];
+                for(int g = 0; g < numOfGates; g++){
+                    this.mapas[i].xkey[g] = scan.nextInt();
+                    this.mapas[i].zkey[g] = scan.nextInt();
+                    this.mapas[i].xgate[g] = scan.nextInt();
+                    this.mapas[i].zgate[g] = scan.nextInt();
+                    this.mapas[i].hasGateKey[g] = false;
+                }
+                
             }
             
             this.config = new Scanner(new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\config.txt"));
@@ -198,14 +224,68 @@ public class HelloJME3 extends SimpleApplication
 
 
 
-
+        
         addCubeBlue(0,0,0);
         addCubeBlue(2,0,0);
         addCubeBlue(4,0,0);
         addCubeRed(0,0,2);
-        addCubeRed(0,0,4);       
+        addCubeRed(0,0,4);
         
+        /*
+        // Create model
+        Box box = new Box(1, 1, 1);
+        Geometry geom = new Geometry("box", box);
+        geom.setMaterial(assetManager.loadMaterial("Textures/Terrain/BrickWall/BrickWall.j3m"));
+        Node model = new Node("model");
         
+        model.attachChild(geom);
+
+        Box child = new Box(0.5f, 0.5f, 0.5f);
+        Geometry childGeom = new Geometry("box", child);
+        childGeom.setMaterial(assetManager.loadMaterial("Textures/Terrain/BrickWall/BrickWall.j3m"));
+        Node childModel = new Node("childmodel");
+        childModel.setLocalTranslation(2, 2, 2);
+        childModel.attachChild(childGeom);
+        model.attachChild(childModel);
+        
+        //animation parameters
+        float animTime = 5;
+        int fps = 25;
+        float totalXLength = 10;
+        
+        //calculating frames
+        int totalFrames = (int) (fps * animTime);
+        float dT = animTime / totalFrames, t = 0;
+        float dX = totalXLength / totalFrames, x = 0;
+        float[] times = new float[totalFrames];
+        Vector3f[] translations = new Vector3f[totalFrames];
+        Quaternion[] rotations = new Quaternion[totalFrames];
+        Vector3f[] scales = new Vector3f[totalFrames];
+	for (int i = 0; i < totalFrames; ++i) {
+        	times[i] = t;
+        	t += dT;
+        	translations[i] = new Vector3f(30, x, -30);
+        	x += dX;
+        	rotations[i] = Quaternion.IDENTITY;
+        	scales[i] = Vector3f.UNIT_XYZ;
+        }
+        SpatialTrack spatialTrack = new SpatialTrack(times, translations, rotations, scales);
+        
+        //creating the animation
+        Animation spatialAnimation = new Animation("anim", animTime);
+        spatialAnimation.setTracks(new SpatialTrack[] { spatialTrack });
+        
+        //create spatial animation control
+        AnimControl control = new AnimControl();
+        HashMap<String, Animation> animations = new HashMap<String, Animation>();
+        animations.put("anim", spatialAnimation);
+        control.setAnimations(animations);
+        model.addControl(control);
+        rootNode.attachChild(model);
+        
+        //run animation
+        control.createChannel().setAnim("anim");
+        */
     }
     
     void createHubworldSelection(){
@@ -223,7 +303,6 @@ public class HelloJME3 extends SimpleApplication
         
         // We re-use the flyby camera for rotation, while positioning is handled by physics
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
-        flyCam.setMoveSpeed(100);
 
 
         // We load the scene from the zip file and adjust its size.
@@ -262,7 +341,27 @@ public class HelloJME3 extends SimpleApplication
                 CollisionShapeFactory.createMeshShape(terrain);
         landscape = new RigidBodyControl(sceneShape, 0);
         terrain.addControl(landscape);
+        
+        /*
+        Material ceilingMat = new Material(assetManager,
+                "Common/MatDefs/Terrain/Terrain.j3md");
+        
+        ceilingMat.setFloat("Tex3Scale", 128f);
+        ceiling = new TerrainQuad("my ceiling", 65, 513, heightmap.getHeightMap());
+        ceiling.setMaterial(terrainMat);
 
+        ceiling.setLocalScale(2f);
+
+        // We set up collision detection for the scene by creating a
+        // compound collision shape and a static RigidBodyControl with mass zero.
+        CollisionShape ceilingShape =
+                CollisionShapeFactory.createMeshShape(ceiling);
+        ceilingLandscape = new RigidBodyControl(ceilingShape, 0);
+        ceiling.addControl(ceilingLandscape);
+        rootNode.attachChild(ceiling);
+        bulletAppState.getPhysicsSpace().add(ceilingLandscape);
+        */
+        
         /**
          * We set up collision detection for the player by creating
          * a capsule collision shape and a CharacterControl.
@@ -287,10 +386,10 @@ public class HelloJME3 extends SimpleApplication
         // You can change the gravity of individual physics objects after they are
         // added to the PhysicsSpace.
         player.setGravity(new Vector3f(0,-30f,0));
+        cam.lookAtDirection(new Vector3f(-10f, 0, -20f), new Vector3f(0,90f,0));
     }
     
     void fileMaze(int height, int width){
-        this.fase++;
         if(fase <= noMapas){
             Node world = new Node("world");
             createMaze(mapas[this.fase-1].matriz,30,30,world); 
@@ -390,6 +489,7 @@ public class HelloJME3 extends SimpleApplication
         }
         catch(Exception e){
             System.out.println("Oh no");
+            System.out.println(e);
         }
     }
     
@@ -558,6 +658,7 @@ void addCubeRed(float x, float y, float z){
         
     Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
     mat.setColor("Color", ColorRGBA.Red);
+    
     geom.setMaterial(mat);
     bulletAppState.getPhysicsSpace().add(thing);
 }
@@ -608,6 +709,110 @@ void addCubeBlue(float x, float y, float z){
     inputManager.addListener(this, "Down");
     inputManager.addListener(this, "Jump");
   }
+  
+  Node addGate(float height, float width, float moveX, float moveY, float moveZ, Node world, String version){
+        Box quad = new Box(width, height, 1);
+        //Could be CSGBox
+        Geometry walle = new Geometry("Box", quad);
+      
+      
+        //Quad quad = new Quad(width,height);
+        //Geometry walle = new Geometry("Wall-e",quad);
+        Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
+
+        Texture image = assetManager.loadTexture("Textures/MetalGate.jpg");
+
+        walleMat.setTexture("DiffuseMap", image);
+        walleMat.setBoolean("UseMaterialColors",true);
+        walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
+        walleMat.setColor("Specular",ColorRGBA.White); // for shininess
+        walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
+        walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
+        walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
+        //System.out.println(walleMat.getParams());
+        walle.setMaterial(walleMat);
+        Node walleNod = new Node("walleNod");
+        world.attachChild(walleNod);
+        walleNod.attachChild(walle);
+        
+        
+        switch(version){
+            case "dh":
+                walleNod.move(moveX*width , moveY*height + height, moveZ*width);
+                walleNod.rotate(0,0,0);
+                break;
+            case "uh":
+                walleNod.move((moveX+1)*width, moveY*height + height, moveZ*width);
+                walleNod.rotate(0,(float)Math.PI,0);
+                break;
+            case "lv":
+                walleNod.move(moveX*width , moveY*height + height, moveZ*width);
+                walleNod.rotate(0,3*(float)Math.PI/2,0);
+                break;
+            case "rv":
+                walleNod.move(moveX*width, moveY*height + height, (1+moveZ)*width);
+                walleNod.rotate(0,(float)Math.PI/2,0);
+                break;
+            
+        }
+        
+        GhostControl ghostControl = new GhostControl(new BoxCollisionShape(new Vector3f(width*1.0f,height,1.0f)));
+        walleNod.addControl(ghostControl);   
+        getPhysicsSpace().add(ghostControl);
+
+
+        CollisionShape walleCol = CollisionShapeFactory.createMeshShape(walle);
+        RigidBodyControl walleBod = new RigidBodyControl(walleCol, 0);
+        walle.addControl(walleBod);
+        bulletAppState.getPhysicsSpace().add(walleBod);
+        return walleNod;
+    }
+  
+  public void createGateAnimation(){
+      if(this.fase > 0 && mapas[this.fase-1].gate != null){
+            for(int j = 0;j<this.mapas[this.fase-1].numOfGates;j++){
+                    float animTime = 5*3;
+                    int fps = 25;
+                    float totalXLength = 10;
+
+                    //calculating frames
+                    int totalFrames = (int) (fps * animTime);
+                    float dT = animTime / totalFrames, t = 0;
+                    float dX = totalXLength / totalFrames, x = 0;
+                    float[] times = new float[totalFrames*3];
+                    Vector3f[] translations = new Vector3f[totalFrames*3];
+                    Quaternion[] rotations = new Quaternion[totalFrames*3];
+                    Vector3f[] scales = new Vector3f[totalFrames*3];
+                    for (int i = 0; i < totalFrames*3; ++i) {
+                        times[i] = t;
+                        t += dT;
+                        rotations[i] = Quaternion.IDENTITY;
+                        scales[i] = Vector3f.UNIT_XYZ;
+                        translations[i] = new Vector3f(mapas[this.fase-1].xgate[j]*10, x+10, mapas[this.fase-1].zgate[j]*10);
+                        if(i<totalFrames/3){
+                            x += dX*3;
+                        }
+                        else if(i>totalFrames*2/3){
+                            x -= dX*3;
+                        }
+                    }
+                    SpatialTrack spatialTrack = new SpatialTrack(times, translations, rotations, scales);
+
+                    //creating the animation
+                    Animation spatialAnimation = new Animation("anim", animTime);
+                    spatialAnimation.setTracks(new SpatialTrack[] { spatialTrack });
+
+                    //create spatial animation control
+                    AnimControl control = new AnimControl();
+                    HashMap<String, Animation> animations = new HashMap<String, Animation>();
+                    animations.put("anim", spatialAnimation);
+                    control.setAnimations(animations);
+                    mapas[this.fase-1].gate[j].addControl(control);
+                    //rootNode.attachChild(model);
+            }
+      }
+  }
+  
 
   /** These are our custom actions triggered by key presses.
    * We do not walk yet, we just keep track of the direction the user pressed. */
@@ -622,9 +827,9 @@ void addCubeBlue(float x, float y, float z){
       down = isPressed;
     } else if (binding.equals("Jump")) {
         if (isPressed) {
-            if(player.onGround()){
+            //if(player.onGround()){
                 player.jump(new Vector3f(0,20f,0));}
-          }
+          //}
           
     }
   }
@@ -659,7 +864,7 @@ void addCubeBlue(float x, float y, float z){
         }
         player.setWalkDirection(walkDirection);
         cam.setLocation(player.getPhysicsLocation());
-        writeOnPartidaTxt(this.inputManager.getCursorPosition().toString() + " L: " + left+ " R: " + right + " U: " + up + " D: " + down);
+        writeOnPartidaTxt("Mouse:" + this.inputManager.getCursorPosition().toString() + " L: " + left+ " R: " + right + " U: " + up + " D: " + down + " Player Location: " + player.getPhysicsLocation() + " Camera Direction: " + cam.getDirection());
         if(hubWorld){
             for(int i = 0; i<this.noMapas;i++){
                 if(entrances[i] != null){
@@ -667,13 +872,48 @@ void addCubeBlue(float x, float y, float z){
                         resetAll();
                         begin();
                         Node world = new Node("world");
-                        createMaze(this.mapas[i].matriz,20,20,world);
-                        ghostControlToHub = addCubeCollision(20*mapas[i].xobjetivo,2,20*mapas[i].yobjetivo,"Black");
-                        ghostControlMainKey = addCubeCollision(20*mapas[i].xchave,2,20*mapas[i].ychave,"Brown");
+                        Mapa mapaAtual = this.mapas[i];
+                        createMaze(mapaAtual.matriz,20,20,world);
+                        ghostControlToHub = addCubeCollision(20*mapaAtual.xobjetivo,2,20*mapaAtual.zobjetivo,"Black");
+                        ghostControlMainKey = addCubeCollision(20*mapaAtual.xchave,2,20*mapaAtual.zchave,"Brown");
                         this.mainKey = false;
+                        this.fase = i + 1;
+                        for(int j = 0; j<mapaAtual.numOfGates;j++){
+                            mapas[this.fase-1].gate[j] = addGate(10, 10, mapaAtual.xgate[j], 0, mapaAtual.zgate[j], world, "dh");
+                            mapas[this.fase-1].gateKey[j] = addCubeCollision(10*mapaAtual.xkey[j], 2 , 10*mapaAtual.zkey[j], "Red");
+                        }
+                        createGateAnimation();
                     }
                 }
             }
+        }
+        if(this.fase > 0 && mapas[this.fase-1].gate != null){
+            for(int j = 0;j<this.mapas[this.fase-1].numOfGates;j++){
+                System.out.println(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount());
+                if(mapas[this.fase-1].gateKey[j].getControl(GhostControl.class).getOverlappingCount() == 1){
+                    mapas[this.fase-1].hasGateKey[j] = true;
+                    mapas[this.fase-1].gateKey[j].removeFromParent();
+                }
+                if(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount() == 3 && mapas[this.fase-1].hasGateKey[j]){
+                    if(mapas[this.fase-1].gate[j].getControl(AnimControl.class).getNumChannels() < 1){
+                        //run animation
+                        AnimChannel anime = mapas[this.fase-1].gate[j].getControl(AnimControl.class).createChannel();
+                        anime.setAnim("anim");
+                        anime.setLoopMode(LoopMode.DontLoop);
+                    }
+                    
+                    else{
+                        AnimChannel aniChannel = mapas[this.fase-1].gate[j].getControl(AnimControl.class).getChannel(0);
+                        if(aniChannel.getTime() == aniChannel.getAnimMaxTime()){
+                            aniChannel.setAnim("anim");
+                        }
+                        
+                    }
+                    
+
+                    
+
+                }
         }
         if(ghostControlMainKey != null)
             if(ghostControlMainKey.getControl(GhostControl.class).getOverlappingCount() == 1){
@@ -683,6 +923,7 @@ void addCubeBlue(float x, float y, float z){
         if(ghostControlToHub != null)
             if(ghostControlToHub.getControl(GhostControl.class).getOverlappingCount() == 1 && this.mainKey == true){
                 resetAll();
+                this.fase = 0;
                 begin();
                 createHubworldSelection();
                 //ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
@@ -693,12 +934,14 @@ void addCubeBlue(float x, float y, float z){
                 resetAll();
                 begin();
                 //ghostControlToHub = addCubeCollision(20*5,35,20*5);
+                this.fase++;
                 fileMaze(20,20);
                 if(this.fase < this.noMapas)
-                ghostControlMainKey = addCubeCollision(20*mapas[this.fase -1].xchave,2,20*mapas[this.fase -1].ychave,"Brown");
-                ghostControlNextLevel = addCubeCollision(20*mapas[this.fase -1].xobjetivo,2,20*mapas[this.fase-1].yobjetivo,"Black");
+                ghostControlMainKey = addCubeCollision(20*mapas[this.fase -1].xchave,2,20*mapas[this.fase -1].zchave,"Brown");
+                ghostControlNextLevel = addCubeCollision(20*mapas[this.fase -1].xobjetivo,2,20*mapas[this.fase-1].zobjetivo,"Black");
                 this.mainKey = false;
             }
+        }
     }
     
     private PhysicsSpace getPhysicsSpace(){
@@ -734,12 +977,18 @@ void addCubeBlue(float x, float y, float z){
 
 class Mapa{
     char[][] matriz;
-    int xchave,ychave,xobjetivo,yobjetivo;
+    int xchave,zchave,xobjetivo,zobjetivo;
+    int numOfGates,xkey[], zkey[], xgate[], zgate[];
+    boolean hasGateKey[];
+    Node gate[], gateKey[];
     public Mapa(){
     }
 }
 
-
+/*
+Fontes:
+    Imagens: https://i.pinimg.com/originals/76/99/ba/7699ba4de8e66f222c848105c6ccfa1f.jpg
+*/
 /*
 13/03
 Estudar Nifty por fora
@@ -755,4 +1004,10 @@ Fazer mapas mais complexos com o esquema de chave para liberar saída
 Ver como capturar todos os inputs de teclas e mouse
 30/07
 Fazer com que coordenadas da câmera e teclas pressionadas sejam gravadas num txt "partida"
+27/08
+Entender as informações da câmera e colocar posição do personagem e informações do mouse no partida.txt
+01/10
+Fazer animação para porta e ter múltiplas portas
+19/11
+Fazer teto, semáforo e colisão seguir porta
 */

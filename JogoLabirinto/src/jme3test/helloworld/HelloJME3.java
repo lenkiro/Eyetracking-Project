@@ -387,6 +387,8 @@ public class HelloJME3 extends SimpleApplication
         // added to the PhysicsSpace.
         player.setGravity(new Vector3f(0,-30f,0));
         cam.lookAtDirection(new Vector3f(-10f, 0, -20f), new Vector3f(0,90f,0));
+        
+        
     }
     
     void fileMaze(int height, int width){
@@ -473,7 +475,7 @@ public class HelloJME3 extends SimpleApplication
             }
         }
 
-
+        addCeiling(matriz.length*width,matriz[0].length*width,height,world);
         rootNode.attachChild(world);
     }
     
@@ -683,6 +685,30 @@ void addCubeBlue(float x, float y, float z){
     bulletAppState.getPhysicsSpace().add(thing);
 }
 
+void addCeiling(float width, float length,float height, Node world){
+    Quad quad = new Quad(width,length);
+    Geometry walle = new Geometry("Ceiling",quad);
+    Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
+
+    Texture image = assetManager.loadTexture("Textures/DuplicatedBrickWall.jpg");
+
+    walleMat.setTexture("DiffuseMap", image);
+    walleMat.setBoolean("UseMaterialColors",true);
+    walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
+    walleMat.setColor("Specular",ColorRGBA.White); // for shininess
+    walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
+    walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
+    walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
+    //System.out.println(walleMat.getParams());
+    walle.setMaterial(walleMat);
+    Node walleNod = new Node("walleNod");
+    world.attachChild(walleNod);
+    walleNod.attachChild(walle);
+    
+    walleNod.move(0,height+0.1f,0);
+    walleNod.rotate(3*(float)Math.PI/2,3*(float)Math.PI/2,0);
+}
+
   private void setUpLight() {
     // We add light so we see the scene
     AmbientLight al = new AmbientLight();
@@ -724,11 +750,11 @@ void addCubeBlue(float x, float y, float z){
 
         walleMat.setTexture("DiffuseMap", image);
         walleMat.setBoolean("UseMaterialColors",true);
-        walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
+        walleMat.setColor("Diffuse",ColorRGBA.Red);  // minimum material color
         walleMat.setColor("Specular",ColorRGBA.White); // for shininess
         walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-        walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
-        walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
+        walleMat.setColor("Ambient",ColorRGBA.Red.mult(0.3f));
+        //walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
         //System.out.println(walleMat.getParams());
         walle.setMaterial(walleMat);
         Node walleNod = new Node("walleNod");
@@ -906,6 +932,7 @@ void addCubeBlue(float x, float y, float z){
                         AnimChannel aniChannel = mapas[this.fase-1].gate[j].getControl(AnimControl.class).getChannel(0);
                         if(aniChannel.getTime() == aniChannel.getAnimMaxTime()){
                             aniChannel.setAnim("anim");
+                            aniChannel.setLoopMode(LoopMode.DontLoop);
                         }
                         
                     }
@@ -1010,4 +1037,9 @@ Entender as informações da câmera e colocar posição do personagem e informa
 Fazer animação para porta e ter múltiplas portas
 19/11
 Fazer teto, semáforo e colisão seguir porta
+10/12
+Colocar cores nas chaves e portas
+Completar o teto
+Colisão porta
+Impedir personagem de girar para trás
 */

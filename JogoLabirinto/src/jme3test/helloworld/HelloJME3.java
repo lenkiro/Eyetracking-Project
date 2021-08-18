@@ -103,6 +103,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.lang.reflect.*;
 
 /**
  * Example 9 - How to make walls and floors solid.
@@ -142,10 +143,10 @@ public class HelloJME3 extends SimpleApplication
     private Node[] entrances;
     private BufferedWriter partidaBW;
 
-    public static void main(String[] args) throws FileNotFoundException{
-      HelloJME3 app = new HelloJME3();
-      app.setPauseOnLostFocus(false);
-      app.start();
+    public static void main(String[] args){
+        HelloJME3 app = new HelloJME3();
+        app.setPauseOnLostFocus(false);
+        app.start();
     }
 
     public void simpleInitApp() {
@@ -190,12 +191,16 @@ public class HelloJME3 extends SimpleApplication
                 this.mapas[i].gate = new Node[numOfGates];
                 this.mapas[i].gateKey = new Node[numOfGates];
                 this.mapas[i].hasGateKey = new boolean[numOfGates];
+                this.mapas[i].gateColor = new String[numOfGates];
                 for(int g = 0; g < numOfGates; g++){
+                    this.mapas[i].gateColor[g] = scan.next();
                     this.mapas[i].xkey[g] = scan.nextInt();
                     this.mapas[i].zkey[g] = scan.nextInt();
                     this.mapas[i].xgate[g] = scan.nextInt();
                     this.mapas[i].zgate[g] = scan.nextInt();
                     this.mapas[i].hasGateKey[g] = false;
+                    System.out.print(this.mapas[i].gateColor[g] + " ");
+                    System.out.print(this.mapas[i].xkey[g] + "\n");
                 }
                 
             }
@@ -225,11 +230,11 @@ public class HelloJME3 extends SimpleApplication
 
 
         
-        addCubeBlue(0,0,0);
-        addCubeBlue(2,0,0);
-        addCubeBlue(4,0,0);
-        addCubeRed(0,0,2);
-        addCubeRed(0,0,4);
+        addColoredCube(0,0,0,ColorRGBA.Blue);
+        addColoredCube(2,0,0,ColorRGBA.Blue);
+        addColoredCube(4,0,0,ColorRGBA.Blue);
+        addColoredCube(0,0,2,ColorRGBA.Red);
+        addColoredCube(0,0,4,ColorRGBA.Red);
         
         /*
         // Create model
@@ -287,6 +292,7 @@ public class HelloJME3 extends SimpleApplication
         control.createChannel().setAnim("anim");
         */
     }
+    
     
     void createHubworldSelection(){
         entrances = new Node [this.noMapas];
@@ -606,7 +612,7 @@ public class HelloJME3 extends SimpleApplication
         bulletAppState.getPhysicsSpace().add(walleBod);
     }
     
-    Node addCubeCollision(float x, float y, float z,String color){
+    Node addCubeCollision(float x, float y, float z,String colorStr){
         GhostControl ghostControl = new GhostControl(new BoxCollisionShape(new Vector3f(1,1,1)));  // a box-shaped ghost
         
         Node cNode = new Node("cNode");
@@ -628,10 +634,9 @@ public class HelloJME3 extends SimpleApplication
         rootNode.attachChild(cNode);
         
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        if(color.equals("Red")) mat.setColor("Color", ColorRGBA.Red);
-        else if(color.equals("Blue")) mat.setColor("Color", ColorRGBA.Blue);
-        else if(color.equals("Brown")) mat.setColor("Color", ColorRGBA.Brown);
-        else mat.setColor("Color", ColorRGBA.Black);
+        
+        ColorRGBA color = colorStrToRGBA(colorStr);
+        mat.setColor("Color", color);
         geom.setMaterial(mat);
         bulletAppState.getPhysicsSpace().add(thing);
         
@@ -642,101 +647,120 @@ public class HelloJME3 extends SimpleApplication
         */
     }
     
-    
+    void addColoredCube(float x, float y, float z, ColorRGBA color){
+        Box b = new Box(1, 20, 1);
+        Geometry geom = new Geometry("Box", b);
+        Node cNode = new Node("cNode"); 
+        cNode.attachChild(geom);
+        cNode.move(x, y, z);
 
-void addCubeRed(float x, float y, float z){
-    Box b = new Box(1, 20, 1);
-    Geometry geom = new Geometry("Box", b);
-    Node cNode = new Node("cNode"); 
-    cNode.attachChild(geom);
-    cNode.move(x, y, z);
-        
-        
-        
-    CollisionShape wallShape = CollisionShapeFactory.createBoxShape(geom);
-    RigidBodyControl thing = new RigidBodyControl(wallShape, 0);
-        
-    rootNode.attachChild(cNode);
-        
-    Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-    mat.setColor("Color", ColorRGBA.Red);
-    
-    geom.setMaterial(mat);
-    bulletAppState.getPhysicsSpace().add(thing);
-}
 
-void addCubeBlue(float x, float y, float z){
-    Box b = new Box(1, 20, 1);
-    Geometry geom = new Geometry("Box", b);
-    Node cNode = new Node("cNode"); 
-    cNode.attachChild(geom);
-    cNode.move(x, y, z);
-        
-        
-        
-    CollisionShape wallShape = CollisionShapeFactory.createBoxShape(geom);
-    RigidBodyControl thing = new RigidBodyControl(wallShape, 0);
-        
-    rootNode.attachChild(cNode);
-        
-    Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-    mat.setColor("Color", ColorRGBA.Blue);
-    geom.setMaterial(mat);
-    bulletAppState.getPhysicsSpace().add(thing);
-}
 
-void addCeiling(float width, float length,float height, Node world){
-    Quad quad = new Quad(width,length);
-    Geometry walle = new Geometry("Ceiling",quad);
-    Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
+        CollisionShape wallShape = CollisionShapeFactory.createBoxShape(geom);
+        RigidBodyControl thing = new RigidBodyControl(wallShape, 0);
 
-    Texture image = assetManager.loadTexture("Textures/DuplicatedBrickWall.jpg");
+        rootNode.attachChild(cNode);
 
-    walleMat.setTexture("DiffuseMap", image);
-    walleMat.setBoolean("UseMaterialColors",true);
-    walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
-    walleMat.setColor("Specular",ColorRGBA.White); // for shininess
-    walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-    walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
-    walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-    //System.out.println(walleMat.getParams());
-    walle.setMaterial(walleMat);
-    Node walleNod = new Node("walleNod");
-    world.attachChild(walleNod);
-    walleNod.attachChild(walle);
-    
-    walleNod.move(0,height+0.1f,0);
-    walleNod.rotate(3*(float)Math.PI/2,3*(float)Math.PI/2,0);
-}
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setColor("Color", color);
 
-  private void setUpLight() {
-    // We add light so we see the scene
-    AmbientLight al = new AmbientLight();
-    al.setColor(ColorRGBA.White.mult(1.3f));
-    rootNode.addLight(al);
+        geom.setMaterial(mat);
+        bulletAppState.getPhysicsSpace().add(thing);
+    }
 
-    DirectionalLight dl = new DirectionalLight();
-    dl.setColor(ColorRGBA.White);
-    dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
-    rootNode.addLight(dl);
-  }
+    void addCubeRed(float x, float y, float z){
+        Box b = new Box(1, 20, 1);
+        Geometry geom = new Geometry("Box", b);
+        Node cNode = new Node("cNode"); 
+        cNode.attachChild(geom);
+        cNode.move(x, y, z);
+
+
+
+        CollisionShape wallShape = CollisionShapeFactory.createBoxShape(geom);
+        RigidBodyControl thing = new RigidBodyControl(wallShape, 0);
+
+        rootNode.attachChild(cNode);
+
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setColor("Color", ColorRGBA.Red);
+
+        geom.setMaterial(mat);
+        bulletAppState.getPhysicsSpace().add(thing);
+    }
+
+    void addCubeBlue(float x, float y, float z){
+        Box b = new Box(1, 20, 1);
+        Geometry geom = new Geometry("Box", b);
+        Node cNode = new Node("cNode"); 
+        cNode.attachChild(geom);
+        cNode.move(x, y, z);
+
+
+
+        CollisionShape wallShape = CollisionShapeFactory.createBoxShape(geom);
+        RigidBodyControl thing = new RigidBodyControl(wallShape, 0);
+
+        rootNode.attachChild(cNode);
+
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setColor("Color", ColorRGBA.Blue);
+        geom.setMaterial(mat);
+        bulletAppState.getPhysicsSpace().add(thing);
+    }
+
+    void addCeiling(float width, float length,float height, Node world){
+        Quad quad = new Quad(width,length);
+        Geometry walle = new Geometry("Ceiling",quad);
+        Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
+
+        Texture image = assetManager.loadTexture("Textures/DuplicatedBrickWall.jpg");
+
+        walleMat.setTexture("DiffuseMap", image);
+        walleMat.setBoolean("UseMaterialColors",true);
+        walleMat.setColor("Diffuse",ColorRGBA.White);  // minimum material color
+        walleMat.setColor("Specular",ColorRGBA.White); // for shininess
+        walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
+        walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
+        walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
+        //System.out.println(walleMat.getParams());
+        walle.setMaterial(walleMat);
+        Node walleNod = new Node("walleNod");
+        world.attachChild(walleNod);
+        walleNod.attachChild(walle);
+
+        walleNod.move(0,height+0.1f,0);
+        walleNod.rotate(3*(float)Math.PI/2,3*(float)Math.PI/2,0);
+    }
+
+    private void setUpLight() {
+        // We add light so we see the scene
+        AmbientLight al = new AmbientLight();
+        al.setColor(ColorRGBA.White.mult(1.3f));
+        rootNode.addLight(al);
+
+        DirectionalLight dl = new DirectionalLight();
+        dl.setColor(ColorRGBA.White);
+        dl.setDirection(new Vector3f(2.8f, -2.8f, -2.8f).normalizeLocal());
+        rootNode.addLight(dl);
+    }
 
   /** We over-write some navigational key mappings here, so we can
    * add physics-controlled walking and jumping: */
-  private void setUpKeys() {
-    inputManager.addMapping("Left", new KeyTrigger(KeyInput.KEY_A));
-    inputManager.addMapping("Right", new KeyTrigger(KeyInput.KEY_D));
-    inputManager.addMapping("Up", new KeyTrigger(KeyInput.KEY_W));
-    inputManager.addMapping("Down", new KeyTrigger(KeyInput.KEY_S));
-    inputManager.addMapping("Jump", new KeyTrigger(KeyInput.KEY_SPACE));
-    inputManager.addListener(this, "Left");
-    inputManager.addListener(this, "Right");
-    inputManager.addListener(this, "Up");
-    inputManager.addListener(this, "Down");
-    inputManager.addListener(this, "Jump");
-  }
+    private void setUpKeys() {
+        inputManager.addMapping("Left", new KeyTrigger(KeyInput.KEY_A));
+        inputManager.addMapping("Right", new KeyTrigger(KeyInput.KEY_D));
+        inputManager.addMapping("Up", new KeyTrigger(KeyInput.KEY_W));
+        inputManager.addMapping("Down", new KeyTrigger(KeyInput.KEY_S));
+        inputManager.addMapping("Jump", new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addListener(this, "Left");
+        inputManager.addListener(this, "Right");
+        inputManager.addListener(this, "Up");
+        inputManager.addListener(this, "Down");
+        inputManager.addListener(this, "Jump");
+    }
   
-  Node addGate(float height, float width, float moveX, float moveY, float moveZ, Node world, String version){
+    Node addGate(float height, float width, float moveX, float moveY, float moveZ, Node world, String version, String colorStr){
         Box quad = new Box(width, height, 1);
         //Could be CSGBox
         Geometry walle = new Geometry("Box", quad);
@@ -750,10 +774,15 @@ void addCeiling(float width, float length,float height, Node world){
 
         walleMat.setTexture("DiffuseMap", image);
         walleMat.setBoolean("UseMaterialColors",true);
-        walleMat.setColor("Diffuse",ColorRGBA.Red);  // minimum material color
+        
+        
+        
+        ColorRGBA color = colorStrToRGBA(colorStr);
+        walleMat.setColor("Diffuse", color);  // minimum material color
+        walleMat.setColor("Ambient",color.mult(0.3f));
+        
         walleMat.setColor("Specular",ColorRGBA.White); // for shininess
         walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-        walleMat.setColor("Ambient",ColorRGBA.Red.mult(0.3f));
         //walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
         //System.out.println(walleMat.getParams());
         walle.setMaterial(walleMat);
@@ -794,9 +823,9 @@ void addCeiling(float width, float length,float height, Node world){
         return walleNod;
     }
   
-  public void createGateAnimation(){
-      if(this.fase > 0 && mapas[this.fase-1].gate != null){
-            for(int j = 0;j<this.mapas[this.fase-1].numOfGates;j++){
+    public void createGateAnimation(int faseAtual){
+        if(faseAtual > 0 && mapas[faseAtual-1].gate != null){
+                for(int j = 0;j<this.mapas[faseAtual-1].numOfGates;j++){
                     float animTime = 5*3;
                     int fps = 25;
                     float totalXLength = 10;
@@ -814,7 +843,7 @@ void addCeiling(float width, float length,float height, Node world){
                         t += dT;
                         rotations[i] = Quaternion.IDENTITY;
                         scales[i] = Vector3f.UNIT_XYZ;
-                        translations[i] = new Vector3f(mapas[this.fase-1].xgate[j]*10, x+10, mapas[this.fase-1].zgate[j]*10);
+                        translations[i] = new Vector3f(mapas[faseAtual-1].xgate[j]*10, x+10, mapas[faseAtual-1].zgate[j]*10);
                         if(i<totalFrames/3){
                             x += dX*3;
                         }
@@ -833,32 +862,46 @@ void addCeiling(float width, float length,float height, Node world){
                     HashMap<String, Animation> animations = new HashMap<String, Animation>();
                     animations.put("anim", spatialAnimation);
                     control.setAnimations(animations);
-                    mapas[this.fase-1].gate[j].addControl(control);
+                    mapas[faseAtual-1].gate[j].addControl(control);
                     //rootNode.attachChild(model);
-            }
-      }
-  }
+                }
+        }
+    }
   
 
   /** These are our custom actions triggered by key presses.
    * We do not walk yet, we just keep track of the direction the user pressed. */
-  public void onAction(String binding, boolean isPressed, float tpf) {
-    if (binding.equals("Left")) {
-      left = isPressed;
-    } else if (binding.equals("Right")) {
-      right= isPressed;
-    } else if (binding.equals("Up")) {
-      up = isPressed;
-    } else if (binding.equals("Down")) {
-      down = isPressed;
-    } else if (binding.equals("Jump")) {
-        if (isPressed) {
-            //if(player.onGround()){
-                player.jump(new Vector3f(0,20f,0));}
-          //}
-          
+    public void onAction(String binding, boolean isPressed, float tpf) {
+        if (binding.equals("Left")) {
+          left = isPressed;
+        } else if (binding.equals("Right")) {
+          right= isPressed;
+        } else if (binding.equals("Up")) {
+          up = isPressed;
+        } else if (binding.equals("Down")) {
+          down = isPressed;
+        } else if (binding.equals("Jump")) {
+            if (isPressed) {
+                //if(player.onGround()){
+                    player.jump(new Vector3f(0,20f,0));}
+              //}
+
+        }
     }
-  }
+  
+    ColorRGBA colorStrToRGBA(String colorStr){
+        ColorRGBA rgba;
+        Field colorField;
+        try {
+            colorField = ColorRGBA.class.getField(colorStr);
+            rgba = (ColorRGBA) colorField.get(ColorRGBA.class);
+        }catch(Exception ex){
+            Logger.getLogger(HelloJME3.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.print("Color Defaulted to Red");
+            rgba = ColorRGBA.Red;
+        }
+        return rgba;
+    }  
 
   /**
    * This is the main event loop--walking happens here.
@@ -868,7 +911,7 @@ void addCeiling(float width, float length,float height, Node world){
    * We also make sure here that the camera moves with player.
    */
   @Override
-    public void simpleUpdate(float tpf) {
+    public void simpleUpdate(float tpf){
         camDir.set(cam.getDirection()).multLocal(0.6f);
         camLeft.set(cam.getLeft()).multLocal(0.4f);
         walkDirection.set(0, 0, 0);
@@ -879,6 +922,8 @@ void addCeiling(float width, float length,float height, Node world){
             walkDirection.addLocal(camLeft.negate());
         }
         if (up) {
+            //fazer norma (pitagoras)
+            //divide cada um pela norma
             walkDirection.addLocal(camDir.x,0,camDir.z);
         }
         if (down) {
@@ -889,7 +934,12 @@ void addCeiling(float width, float length,float height, Node world){
             airTime = 0; 
         }
         player.setWalkDirection(walkDirection);
-        cam.setLocation(player.getPhysicsLocation());
+        cam.setLocation(player.getPhysicsLocation());/*
+        try{
+            System.out.println(getColor("Red"));
+        }catch (Exception e){
+            System.out.println(e);
+        }*/
         writeOnPartidaTxt("Mouse:" + this.inputManager.getCursorPosition().toString() + " L: " + left+ " R: " + right + " U: " + up + " D: " + down + " Player Location: " + player.getPhysicsLocation() + " Camera Direction: " + cam.getDirection());
         if(hubWorld){
             for(int i = 0; i<this.noMapas;i++){
@@ -899,28 +949,32 @@ void addCeiling(float width, float length,float height, Node world){
                         begin();
                         Node world = new Node("world");
                         Mapa mapaAtual = this.mapas[i];
+                        for(int j = 0; j<mapaAtual.hasGateKey.length;j++){
+                            mapaAtual.hasGateKey[j] = false;
+                        }
+                        
                         createMaze(mapaAtual.matriz,20,20,world);
                         ghostControlToHub = addCubeCollision(20*mapaAtual.xobjetivo,2,20*mapaAtual.zobjetivo,"Black");
                         ghostControlMainKey = addCubeCollision(20*mapaAtual.xchave,2,20*mapaAtual.zchave,"Brown");
                         this.mainKey = false;
                         this.fase = i + 1;
                         for(int j = 0; j<mapaAtual.numOfGates;j++){
-                            mapas[this.fase-1].gate[j] = addGate(10, 10, mapaAtual.xgate[j], 0, mapaAtual.zgate[j], world, "dh");
-                            mapas[this.fase-1].gateKey[j] = addCubeCollision(10*mapaAtual.xkey[j], 2 , 10*mapaAtual.zkey[j], "Red");
+                            mapas[this.fase-1].gate[j] = addGate(10, 10, mapaAtual.xgate[j], 0, mapaAtual.zgate[j], world, "dh",mapaAtual.gateColor[j]);
+                            mapas[this.fase-1].gateKey[j] = addCubeCollision(10*mapaAtual.xkey[j], 2 , 10*mapaAtual.zkey[j], mapaAtual.gateColor[j]);
                         }
-                        createGateAnimation();
+                        createGateAnimation(this.fase);
                     }
                 }
             }
         }
         if(this.fase > 0 && mapas[this.fase-1].gate != null){
             for(int j = 0;j<this.mapas[this.fase-1].numOfGates;j++){
-                System.out.println(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount());
+                //System.out.println(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount());
                 if(mapas[this.fase-1].gateKey[j].getControl(GhostControl.class).getOverlappingCount() == 1){
                     mapas[this.fase-1].hasGateKey[j] = true;
                     mapas[this.fase-1].gateKey[j].removeFromParent();
                 }
-                if(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount() == 3 && mapas[this.fase-1].hasGateKey[j]){
+                if(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount() >= 3 && mapas[this.fase-1].hasGateKey[j]){
                     if(mapas[this.fase-1].gate[j].getControl(AnimControl.class).getNumChannels() < 1){
                         //run animation
                         AnimChannel anime = mapas[this.fase-1].gate[j].getControl(AnimControl.class).createChannel();
@@ -1007,6 +1061,7 @@ class Mapa{
     int xchave,zchave,xobjetivo,zobjetivo;
     int numOfGates,xkey[], zkey[], xgate[], zgate[];
     boolean hasGateKey[];
+    String gateColor[];
     Node gate[], gateKey[];
     public Mapa(){
     }
@@ -1042,4 +1097,6 @@ Colocar cores nas chaves e portas
 Completar o teto
 Colisão porta
 Impedir personagem de girar para trás
+01/04
+Resolver memory leak
 */

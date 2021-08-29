@@ -46,6 +46,10 @@ public class HelloJME3 extends SimpleApplication {
 
 package jme3test.helloworld;
 
+import com.jme3.anim.AnimClip;
+import com.jme3.anim.AnimComposer;
+import com.jme3.anim.AnimTrack;
+import com.jme3.anim.TransformTrack;
 import com.jme3.animation.AnimChannel;
 import com.jme3.animation.AnimControl;
 import com.jme3.animation.Animation;
@@ -122,7 +126,7 @@ public class HelloJME3 extends SimpleApplication
     float airTime = 0;
     //private BetterCharacterControl player;
     private Vector3f walkDirection = new Vector3f();
-    private boolean left = false, right = false, up = false, down = false;
+    private boolean left = false, right = false, up = false, down = false, exit = false;
 
     //Temporary vectors used on each frame.
     //They here to avoid instanciating new vectors on each frame
@@ -142,6 +146,10 @@ public class HelloJME3 extends SimpleApplication
     private Mapa[] mapas;
     private Node[] entrances;
     private BufferedWriter partidaBW;
+    private GazeTrackerClient client;
+    private GazeData data;
+    private FakeEyeTracker fake;
+    private int toggleWalkCounter = 0;
 
     public static void main(String[] args){
         HelloJME3 app = new HelloJME3();
@@ -150,6 +158,12 @@ public class HelloJME3 extends SimpleApplication
     }
 
     public void simpleInitApp() {
+        //flyCam.setEnabled(false);
+        String[] a = null;
+        fake = new FakeEyeTracker();
+        fake.main(a);
+        client = new GazeTrackerClient("localhost", 3000, true);
+        
         Date date = new Date(); // This object contains the current date value
         SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         writeOnPartidaTxt(formatter.format(date));
@@ -230,11 +244,7 @@ public class HelloJME3 extends SimpleApplication
 
 
         
-        addColoredCube(0,0,0,ColorRGBA.Blue);
-        addColoredCube(2,0,0,ColorRGBA.Blue);
-        addColoredCube(4,0,0,ColorRGBA.Blue);
-        addColoredCube(0,0,2,ColorRGBA.Red);
-        addColoredCube(0,0,4,ColorRGBA.Red);
+        
         
         /*
         // Create model
@@ -297,7 +307,7 @@ public class HelloJME3 extends SimpleApplication
     void createHubworldSelection(){
         entrances = new Node [this.noMapas];
         for(int i=0; i<noMapas;i++){
-            this.entrances[i] = addCubeCollision(30*i,2,-30*2,"Black");
+            this.entrances[i] = addCubeCollision(-20*(i-1),2,30*2,"Black");
         }
     }
     
@@ -392,9 +402,16 @@ public class HelloJME3 extends SimpleApplication
         // You can change the gravity of individual physics objects after they are
         // added to the PhysicsSpace.
         player.setGravity(new Vector3f(0,-30f,0));
-        cam.lookAtDirection(new Vector3f(-10f, 0, -20f), new Vector3f(0,90f,0));
         
+        player.setPhysicsLocation(new Vector3f(20,10,20));
+        cam.setLocation(player.getPhysicsLocation());
+        cam.lookAtDirection(new Vector3f(0, 0, 1), new Vector3f(0,1,0));
         
+        addColoredCube(0,2,0,ColorRGBA.Blue);
+        addColoredCube(2,2,0,ColorRGBA.Blue);
+        addColoredCube(4,2,0,ColorRGBA.Blue);
+        addColoredCube(0,2,2,ColorRGBA.Red);
+        addColoredCube(0,2,4,ColorRGBA.Red);
     }
     
     void fileMaze(int height, int width){
@@ -648,7 +665,7 @@ public class HelloJME3 extends SimpleApplication
     }
     
     void addColoredCube(float x, float y, float z, ColorRGBA color){
-        Box b = new Box(1, 20, 1);
+        Box b = new Box(1, 2, 1);
         Geometry geom = new Geometry("Box", b);
         Node cNode = new Node("cNode"); 
         cNode.attachChild(geom);
@@ -753,11 +770,14 @@ public class HelloJME3 extends SimpleApplication
         inputManager.addMapping("Up", new KeyTrigger(KeyInput.KEY_W));
         inputManager.addMapping("Down", new KeyTrigger(KeyInput.KEY_S));
         inputManager.addMapping("Jump", new KeyTrigger(KeyInput.KEY_SPACE));
+        inputManager.addMapping("Exit", new KeyTrigger(KeyInput.KEY_ESCAPE));
+        
         inputManager.addListener(this, "Left");
         inputManager.addListener(this, "Right");
         inputManager.addListener(this, "Up");
         inputManager.addListener(this, "Down");
         inputManager.addListener(this, "Jump");
+        inputManager.addListener(this, "Exit");
     }
   
     Node addGate(float height, float width, float moveX, float moveY, float moveZ, Node world, String version, String colorStr){
@@ -851,6 +871,21 @@ public class HelloJME3 extends SimpleApplication
                             x -= dX*3;
                         }
                     }
+                    /*
+                    Node gate = mapas[faseAtual-1].gate[j];
+                    TransformTrack transformTrack = new TransformTrack(gate.getChild(0), times, translations, rotations, scales);
+                    
+                    // creating the animation
+                    AnimClip animClip = new AnimClip("anim");
+                    animClip.setTracks(new AnimTrack[] { transformTrack});
+
+                    // create spatial animation control
+                    AnimComposer animComposer = new AnimComposer();
+                    animComposer.addAnimClip(animClip);
+
+                    gate.addControl(animComposer);
+                    
+                    */
                     SpatialTrack spatialTrack = new SpatialTrack(times, translations, rotations, scales);
 
                     //creating the animation
@@ -864,6 +899,7 @@ public class HelloJME3 extends SimpleApplication
                     control.setAnimations(animations);
                     mapas[faseAtual-1].gate[j].addControl(control);
                     //rootNode.attachChild(model);
+                    
                 }
         }
     }
@@ -880,6 +916,8 @@ public class HelloJME3 extends SimpleApplication
           up = isPressed;
         } else if (binding.equals("Down")) {
           down = isPressed;
+        } else if (binding.equals("Exit")) {
+          exit = isPressed;
         } else if (binding.equals("Jump")) {
             if (isPressed) {
                 //if(player.onGround()){
@@ -912,7 +950,42 @@ public class HelloJME3 extends SimpleApplication
    */
   @Override
     public void simpleUpdate(float tpf){
+        
+        try{
+            data = client.readGazeData();
+            System.out.println(data.getX() + " " + data.getY() + " " + data.getTimestamp()+ " " + data.isValid() + " " + cam.getDirection() + " " + player.getPhysicsLocation()); 
+            //down = data.getY() >=800;
+            //up = data.getY() <= 200;
+        }
+        
+        catch(Exception e){
+            System.out.println(e);
+        }
+        if(data.getY() <= 200 && data.getX() >= 300 && data.getX() <= 1100){
+            if(toggleWalkCounter >= 1200){
+                up = !up;
+                toggleWalkCounter = 0;
+            }else{
+                toggleWalkCounter++;
+            }
+        }else{
+            toggleWalkCounter = 0;
+        }
+        if(data.getX() >= 1200){
+            //cam.getRotation().
+            
+            //Quaternion quat = new Quaternion().lookAt(walkDirection, new Vector3f(0,1,0));
+            //cam.setRotation(cam.getRotation().add(quat));
+            //cam.setRotation(quat);
+            Vector3f vectorRight = new Vector3f(0.1f,0,0.1f);
+            vectorRight.cross(walkDirection);
+            cam.lookAtDirection(vectorRight, new Vector3f(0,1,0));
+            //camDir.set(camDir.x+1, 0, camDir.z);
+            //camDir.addLocal(1f,0,0);
+        }
+
         camDir.set(cam.getDirection()).multLocal(0.6f);
+        
         camLeft.set(cam.getLeft()).multLocal(0.4f);
         walkDirection.set(0, 0, 0);
         if (left) {
@@ -928,18 +1001,17 @@ public class HelloJME3 extends SimpleApplication
         }
         if (down) {
             walkDirection.addLocal(-camDir.x,0,-camDir.z);
-        }if (!player.onGround()) {
+        }
+        if (exit) {
+            fake.exit();
+        }
+        if (!player.onGround()) {
             airTime = airTime + tpf;
         } else {
             airTime = 0; 
         }
         player.setWalkDirection(walkDirection);
-        cam.setLocation(player.getPhysicsLocation());/*
-        try{
-            System.out.println(getColor("Red"));
-        }catch (Exception e){
-            System.out.println(e);
-        }*/
+        cam.setLocation(player.getPhysicsLocation());
         writeOnPartidaTxt("Mouse:" + this.inputManager.getCursorPosition().toString() + " L: " + left+ " R: " + right + " U: " + up + " D: " + down + " Player Location: " + player.getPhysicsLocation() + " Camera Direction: " + cam.getDirection());
         if(hubWorld){
             for(int i = 0; i<this.noMapas;i++){
@@ -975,19 +1047,25 @@ public class HelloJME3 extends SimpleApplication
                     mapas[this.fase-1].gateKey[j].removeFromParent();
                 }
                 if(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount() >= 3 && mapas[this.fase-1].hasGateKey[j]){
+                    //mapas[this.fase-1].gate[j].getControl(AnimComposer.class).setCurrentAction("anim");
+                    
                     if(mapas[this.fase-1].gate[j].getControl(AnimControl.class).getNumChannels() < 1){
                         //run animation
+                        
                         AnimChannel anime = mapas[this.fase-1].gate[j].getControl(AnimControl.class).createChannel();
                         anime.setAnim("anim");
                         anime.setLoopMode(LoopMode.DontLoop);
+                        
                     }
                     
                     else{
+                        
                         AnimChannel aniChannel = mapas[this.fase-1].gate[j].getControl(AnimControl.class).getChannel(0);
                         if(aniChannel.getTime() == aniChannel.getAnimMaxTime()){
                             aniChannel.setAnim("anim");
                             aniChannel.setLoopMode(LoopMode.DontLoop);
                         }
+                        
                         
                     }
                     

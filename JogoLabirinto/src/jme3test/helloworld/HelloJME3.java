@@ -205,16 +205,16 @@ public class HelloJME3 extends SimpleApplication
                 this.mapas[i].gate = new Node[numOfGates];
                 this.mapas[i].gateKey = new Node[numOfGates];
                 this.mapas[i].hasGateKey = new boolean[numOfGates];
+                this.mapas[i].gateOrientation = new String[numOfGates];
                 this.mapas[i].gateColor = new String[numOfGates];
                 for(int g = 0; g < numOfGates; g++){
                     this.mapas[i].gateColor[g] = scan.next();
+                    this.mapas[i].gateOrientation[g] = scan.next();
                     this.mapas[i].xkey[g] = scan.nextInt();
                     this.mapas[i].zkey[g] = scan.nextInt();
                     this.mapas[i].xgate[g] = scan.nextInt();
                     this.mapas[i].zgate[g] = scan.nextInt();
                     this.mapas[i].hasGateKey[g] = false;
-                    System.out.print(this.mapas[i].gateColor[g] + " ");
-                    System.out.print(this.mapas[i].xkey[g] + "\n");
                 }
                 
             }
@@ -310,7 +310,7 @@ public class HelloJME3 extends SimpleApplication
             this.entrances[i] = addCubeCollision(-20*(i-1),2,30*2,"Black");
         }
     }
-    
+
     void begin(){
         /** Set up Physics */
         bulletAppState = new BulletAppState();
@@ -389,7 +389,7 @@ public class HelloJME3 extends SimpleApplication
         player = new CharacterControl(capsuleShape, 0.05f);
         player.setJumpSpeed(20);
         player.setFallSpeed(30);
-        player.setPhysicsLocation(new Vector3f(0, 10, 0));
+        player.setPhysicsLocation(new Vector3f(20, 10, 20));
         player.setUp(new Vector3f(0, 1, 0)); 
         //player = new BetterCharacterControl(1.5f, 6f, 1f); 
         
@@ -403,7 +403,6 @@ public class HelloJME3 extends SimpleApplication
         // added to the PhysicsSpace.
         player.setGravity(new Vector3f(0,-30f,0));
         
-        player.setPhysicsLocation(new Vector3f(20,10,20));
         cam.setLocation(player.getPhysicsLocation());
         cam.lookAtDirection(new Vector3f(0, 0, 1), new Vector3f(0,1,0));
         
@@ -417,7 +416,7 @@ public class HelloJME3 extends SimpleApplication
     void fileMaze(int height, int width){
         if(fase <= noMapas){
             Node world = new Node("world");
-            createMaze(mapas[this.fase-1].matriz,30,30,world); 
+            createMaze(mapas[this.fase-1].matriz,20,20,world); 
         }else{
         }
     }
@@ -647,6 +646,7 @@ public class HelloJME3 extends SimpleApplication
         
         CollisionShape wallShape = CollisionShapeFactory.createBoxShape(geom);
         RigidBodyControl thing = new RigidBodyControl(wallShape, 0);
+        //cNode.addControl(thing);
         
         rootNode.attachChild(cNode);
         
@@ -731,7 +731,7 @@ public class HelloJME3 extends SimpleApplication
         Geometry walle = new Geometry("Ceiling",quad);
         Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
 
-        Texture image = assetManager.loadTexture("Textures/DuplicatedBrickWall.jpg");
+        Texture image = assetManager.loadTexture("Textures/BrownCeiling.jpg");
 
         walleMat.setTexture("DiffuseMap", image);
         walleMat.setBoolean("UseMaterialColors",true);
@@ -812,21 +812,13 @@ public class HelloJME3 extends SimpleApplication
         
         
         switch(version){
-            case "dh":
-                walleNod.move(moveX*width , moveY*height + height, moveZ*width);
+            case "Horizontal":
+                walleNod.move(moveX*2*width, moveY*height + height, moveZ*2*width - width);
                 walleNod.rotate(0,0,0);
                 break;
-            case "uh":
-                walleNod.move((moveX+1)*width, moveY*height + height, moveZ*width);
-                walleNod.rotate(0,(float)Math.PI,0);
-                break;
-            case "lv":
-                walleNod.move(moveX*width , moveY*height + height, moveZ*width);
+            case "Vertical":
+                walleNod.move(moveX*2*width - width, moveY*height + height + 0.1f, moveZ*2*width);
                 walleNod.rotate(0,3*(float)Math.PI/2,0);
-                break;
-            case "rv":
-                walleNod.move(moveX*width, moveY*height + height, (1+moveZ)*width);
-                walleNod.rotate(0,(float)Math.PI/2,0);
                 break;
             
         }
@@ -846,30 +838,26 @@ public class HelloJME3 extends SimpleApplication
     public void createGateAnimation(int faseAtual){
         if(faseAtual > 0 && mapas[faseAtual-1].gate != null){
                 for(int j = 0;j<this.mapas[faseAtual-1].numOfGates;j++){
-                    float animTime = 5*3;
+                    float animTime = 5;
                     int fps = 25;
-                    float totalXLength = 10;
+                    float totalXLength = 19;
 
                     //calculating frames
                     int totalFrames = (int) (fps * animTime);
                     float dT = animTime / totalFrames, t = 0;
                     float dX = totalXLength / totalFrames, x = 0;
-                    float[] times = new float[totalFrames*3];
-                    Vector3f[] translations = new Vector3f[totalFrames*3];
-                    Quaternion[] rotations = new Quaternion[totalFrames*3];
-                    Vector3f[] scales = new Vector3f[totalFrames*3];
-                    for (int i = 0; i < totalFrames*3; ++i) {
+                    float[] times = new float[totalFrames];
+                    Vector3f[] translations = new Vector3f[totalFrames];
+                    Quaternion[] rotations = new Quaternion[totalFrames];
+                    Vector3f[] scales = new Vector3f[totalFrames];
+                    for (int i = 0; i < totalFrames; ++i) {
                         times[i] = t;
                         t += dT;
-                        rotations[i] = Quaternion.IDENTITY;
+                        rotations[i] = mapas[faseAtual-1].gate[j].getLocalRotation();
                         scales[i] = Vector3f.UNIT_XYZ;
-                        translations[i] = new Vector3f(mapas[faseAtual-1].xgate[j]*10, x+10, mapas[faseAtual-1].zgate[j]*10);
-                        if(i<totalFrames/3){
-                            x += dX*3;
-                        }
-                        else if(i>totalFrames*2/3){
-                            x -= dX*3;
-                        }
+                        translations[i] = new Vector3f(mapas[faseAtual-1].gate[j].getLocalTranslation().getX(), x+10, mapas[faseAtual-1].gate[j].getLocalTranslation().getZ());
+                        x += dX;
+                        
                     }
                     /*
                     Node gate = mapas[faseAtual-1].gate[j];
@@ -950,10 +938,9 @@ public class HelloJME3 extends SimpleApplication
    */
   @Override
     public void simpleUpdate(float tpf){
-        
         try{
             data = client.readGazeData();
-            System.out.println(data.getX() + " " + data.getY() + " " + data.getTimestamp()+ " " + data.isValid() + " " + cam.getDirection() + " " + player.getPhysicsLocation()); 
+            //System.out.println(data.getX() + " " + data.getY() + " " + data.getTimestamp()+ " " + data.isValid() + " " + cam.getDirection() + " " + player.getPhysicsLocation()); 
             //down = data.getY() >=800;
             //up = data.getY() <= 200;
         }
@@ -1016,7 +1003,7 @@ public class HelloJME3 extends SimpleApplication
         if(hubWorld){
             for(int i = 0; i<this.noMapas;i++){
                 if(entrances[i] != null){
-                    if(entrances[i].getControl(GhostControl.class).getOverlappingCount() == 1){
+                    if(entrances[i].getControl(GhostControl.class).getOverlappingObjects().contains(player)){
                         resetAll();
                         begin();
                         Node world = new Node("world");
@@ -1031,8 +1018,8 @@ public class HelloJME3 extends SimpleApplication
                         this.mainKey = false;
                         this.fase = i + 1;
                         for(int j = 0; j<mapaAtual.numOfGates;j++){
-                            mapas[this.fase-1].gate[j] = addGate(10, 10, mapaAtual.xgate[j], 0, mapaAtual.zgate[j], world, "dh",mapaAtual.gateColor[j]);
-                            mapas[this.fase-1].gateKey[j] = addCubeCollision(10*mapaAtual.xkey[j], 2 , 10*mapaAtual.zkey[j], mapaAtual.gateColor[j]);
+                            mapas[this.fase-1].gate[j] = addGate(10, 10, mapaAtual.xgate[j], 0, mapaAtual.zgate[j], world, mapaAtual.gateOrientation[j],mapaAtual.gateColor[j]);
+                            mapas[this.fase-1].gateKey[j] = addCubeCollision(20*mapaAtual.xkey[j], 2 , 20*mapaAtual.zkey[j], mapaAtual.gateColor[j]);
                         }
                         createGateAnimation(this.fase);
                     }
@@ -1042,13 +1029,13 @@ public class HelloJME3 extends SimpleApplication
         if(this.fase > 0 && mapas[this.fase-1].gate != null){
             for(int j = 0;j<this.mapas[this.fase-1].numOfGates;j++){
                 //System.out.println(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount());
-                if(mapas[this.fase-1].gateKey[j].getControl(GhostControl.class).getOverlappingCount() == 1){
+                if(mapas[this.fase-1].gateKey[j].getControl(GhostControl.class).getOverlappingObjects().contains(player)){
                     mapas[this.fase-1].hasGateKey[j] = true;
                     mapas[this.fase-1].gateKey[j].removeFromParent();
                 }
-                if(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount() >= 3 && mapas[this.fase-1].hasGateKey[j]){
+                
+                if((!mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingObjects().contains(rootNode.getChild(0).getControl(RigidBodyControl.class)) ||mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingObjects().contains(player)) && mapas[this.fase-1].hasGateKey[j]){
                     //mapas[this.fase-1].gate[j].getControl(AnimComposer.class).setCurrentAction("anim");
-                    
                     if(mapas[this.fase-1].gate[j].getControl(AnimControl.class).getNumChannels() < 1){
                         //run animation
                         
@@ -1061,26 +1048,24 @@ public class HelloJME3 extends SimpleApplication
                     else{
                         
                         AnimChannel aniChannel = mapas[this.fase-1].gate[j].getControl(AnimControl.class).getChannel(0);
-                        if(aniChannel.getTime() == aniChannel.getAnimMaxTime()){
-                            aniChannel.setAnim("anim");
-                            aniChannel.setLoopMode(LoopMode.DontLoop);
+                        if(aniChannel.getTime() >= aniChannel.getAnimMaxTime()/2){
+                            bulletAppState.getPhysicsSpace().remove(mapas[this.fase-1].gate[j].getChild(0).getControl(RigidBodyControl.class));
                         }
                         
                         
                     }
-                    
-
-                    
+                //bulletAppState.getPhysicsSpace().remove(mapas[this.fase-1].gate[j].getChild(0).getControl(RigidBodyControl.class));
+                
 
                 }
         }
         if(ghostControlMainKey != null)
-            if(ghostControlMainKey.getControl(GhostControl.class).getOverlappingCount() == 1){
+            if(ghostControlMainKey.getControl(GhostControl.class).getOverlappingObjects().contains(player)){
                 this.mainKey = true;
                 ghostControlMainKey.removeFromParent();
             }
         if(ghostControlToHub != null)
-            if(ghostControlToHub.getControl(GhostControl.class).getOverlappingCount() == 1 && this.mainKey == true){
+            if(ghostControlToHub.getControl(GhostControl.class).getOverlappingObjects().contains(player) && this.mainKey == true){
                 resetAll();
                 this.fase = 0;
                 begin();
@@ -1089,7 +1074,7 @@ public class HelloJME3 extends SimpleApplication
                 //ghostControlToHub = addCubeCollision(20*5,35,20*5);
             }
         if(ghostControlNextLevel != null)
-            if(ghostControlNextLevel.getControl(GhostControl.class).getOverlappingCount() == 1 && this.mainKey){
+            if(ghostControlNextLevel.getControl(GhostControl.class).getOverlappingObjects().contains(player) && this.mainKey){
                 resetAll();
                 begin();
                 //ghostControlToHub = addCubeCollision(20*5,35,20*5);
@@ -1139,8 +1124,10 @@ class Mapa{
     int xchave,zchave,xobjetivo,zobjetivo;
     int numOfGates,xkey[], zkey[], xgate[], zgate[];
     boolean hasGateKey[];
+    String gateOrientation [];
     String gateColor[];
     Node gate[], gateKey[];
+    
     public Mapa(){
     }
 }
@@ -1148,6 +1135,7 @@ class Mapa{
 /*
 Fontes:
     Imagens: https://i.pinimg.com/originals/76/99/ba/7699ba4de8e66f222c848105c6ccfa1f.jpg
+             https://www.wildtextures.com/wp-content/uploads/wildtextures-leather-Campo-darkbrown.jpg
 */
 /*
 13/03

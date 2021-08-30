@@ -1,5 +1,6 @@
 # Eyetracking-Based Tool for Maze Navigation 
 A JMonkey Engine application where you control a character in first person with your gaze.
+![image](https://user-images.githubusercontent.com/50025952/131407203-54218741-22a8-4a7c-9bf0-c1d44fde2a66.png)
 
 You'll be put in a level selector hub world where you can choose between three levels by walking into their black boxes, which will transport you to the their maze.
 Once in the maze, you must reach the hidden black box inside to finish the level. However you must first grab the key (a brown box) to make the black box usable.

@@ -7,11 +7,14 @@ Once in the maze, you must reach the hidden black box inside to finish the level
 Along the way, you'll encounter colored gates which are opened by touching them after having collected the their respective key (a box with the same color as the gate).
 
 How to control (Using the eyetracker, which is being simulated by your mouse):
+
 Look up to activate auto-walking forward.
+
 Look down to stop walking.
+
 Look left or right to rotate in that direction.
 
 How to run the game:
-Download and install JMonkey Engine JDK (JDK3.3 was tested)
-After opening it, select "File" then "Open Project" (here you select the project folder you downloaded here, it will have a monkey icon), and then "Run"
+Download and install JMonkey Engine JDK (JDK3.3 was tested).
+After opening it, select "File" then "Open Project" (here you select the project folder you downloaded here, it will have a monkey icon), and then "Run".
 On the window that shows up, make sure to select "fullscreen" and your monitor resolution, unselect "V-sync" and press "Continue" to begin the application.

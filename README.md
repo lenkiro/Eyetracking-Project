@@ -12,5 +12,5 @@ Look left or right to rotate in that direction.
 
 How to run the game:
 Download and install JMonkey Engine JDK (JDK3.3 was tested)
-After opening it, select "File" then "Open Project", and then "Run"
+After opening it, select "File" then "Open Project" (here you select the project folder you downloaded here, it will have a monkey icon), and then "Run"
 On the window that shows up, make sure to select "fullscreen" and your monitor resolution, unselect "V-sync" and press "Continue" to begin the application.

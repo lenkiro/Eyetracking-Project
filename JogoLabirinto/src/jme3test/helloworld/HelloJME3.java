@@ -1,48 +1,4 @@
-/*
-package jme3test.helloworld;
 
-import com.jme3.app.SimpleApplication;
-import com.jme3.material.Material;
-import com.jme3.math.ColorRGBA;
-import com.jme3.renderer.RenderManager;
-import com.jme3.scene.Geometry;
-import com.jme3.scene.shape.Box;
-
-/**
- * This is the Main Class of your Game. You should only do initialization here.
- * Move your Logic into AppStates or Controls
- * @author normenhansen
- *//*
-public class HelloJME3 extends SimpleApplication {
-
-    public static void main(String[] args) {
-        HelloJME3 app = new HelloJME3();
-        app.start();
-    }
-
-    @Override
-    public void simpleInitApp() {
-        Box b = new Box(1, 1, 1);
-        Geometry geom = new Geometry("Box", b);
-
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.Blue);
-        geom.setMaterial(mat);
-
-        rootNode.attachChild(geom);
-    }
-
-    @Override
-    public void simpleUpdate(float tpf) {
-        //TODO: add update code
-    }
-
-    @Override
-    public void simpleRender(RenderManager rm) {
-        //TODO: add render code
-    }
-}
-*/
 
 package jme3test.helloworld;
 
@@ -80,6 +36,7 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState.FaceCullMode;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Matrix4f;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.niftygui.NiftyJmeDisplay;
@@ -109,22 +66,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.lang.reflect.*;
 
-/**
- * Example 9 - How to make walls and floors solid.
- * This collision code uses Physics and a custom Action Listener.
- * @author normen, with edits by Zathras
- */
+
 public class HelloJME3 extends SimpleApplication
         implements ActionListener, ScreenController, PhysicsCollisionListener {
 
     private Spatial terrain;
-    //private Spatial ceiling;
     private BulletAppState bulletAppState;
     private RigidBodyControl landscape;
-    //private RigidBodyControl ceilingLandscape;
     private CharacterControl player;
     float airTime = 0;
-    //private BetterCharacterControl player;
     private Vector3f walkDirection = new Vector3f();
     private boolean left = false, right = false, up = false, down = false, exit = false;
 
@@ -150,6 +100,7 @@ public class HelloJME3 extends SimpleApplication
     private GazeData data;
     private FakeEyeTracker fake;
     private int toggleWalkCounter = 0;
+    private int toggleBackWalkCounter = 0;
 
     public static void main(String[] args){
         HelloJME3 app = new HelloJME3();
@@ -158,21 +109,18 @@ public class HelloJME3 extends SimpleApplication
     }
 
     public void simpleInitApp() {
-        //flyCam.setEnabled(false);
+        flyCam.setEnabled(false); //set True to control the camera with the mouse
         String[] a = null;
         fake = new FakeEyeTracker();
         fake.main(a);
         client = new GazeTrackerClient("localhost", 3000, true);
         
-        Date date = new Date(); // This object contains the current date value
+        Date date = new Date(); 
         SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         writeOnPartidaTxt(formatter.format(date));
         setUpKeys();
         setUpLight();
         
-        //ghostControlToHub = addCubeCollision(30*3,35,30*1);
-        
-        //ghostControlNextLevel = addCubeCollision(30*3,2,30*1);
         
         
         try {
@@ -222,6 +170,8 @@ public class HelloJME3 extends SimpleApplication
             this.config = new Scanner(new File(System.getProperty("user.dir") + "\\src\\jme3test\\helloworld\\config.txt"));
             config.findInLine("hubWorld=");
             this.hubWorld = config.nextBoolean();
+            scan.close();
+            config.close();
             
         } catch (FileNotFoundException ex) {
             Logger.getLogger(HelloJME3.class.getName()).log(Level.SEVERE, null, ex);
@@ -239,68 +189,6 @@ public class HelloJME3 extends SimpleApplication
                           {'0','A','B','0'},
                           {'0','0','0','0'},
                           {'1','0','1','0'}};
-
-
-
-
-        
-        
-        
-        /*
-        // Create model
-        Box box = new Box(1, 1, 1);
-        Geometry geom = new Geometry("box", box);
-        geom.setMaterial(assetManager.loadMaterial("Textures/Terrain/BrickWall/BrickWall.j3m"));
-        Node model = new Node("model");
-        
-        model.attachChild(geom);
-
-        Box child = new Box(0.5f, 0.5f, 0.5f);
-        Geometry childGeom = new Geometry("box", child);
-        childGeom.setMaterial(assetManager.loadMaterial("Textures/Terrain/BrickWall/BrickWall.j3m"));
-        Node childModel = new Node("childmodel");
-        childModel.setLocalTranslation(2, 2, 2);
-        childModel.attachChild(childGeom);
-        model.attachChild(childModel);
-        
-        //animation parameters
-        float animTime = 5;
-        int fps = 25;
-        float totalXLength = 10;
-        
-        //calculating frames
-        int totalFrames = (int) (fps * animTime);
-        float dT = animTime / totalFrames, t = 0;
-        float dX = totalXLength / totalFrames, x = 0;
-        float[] times = new float[totalFrames];
-        Vector3f[] translations = new Vector3f[totalFrames];
-        Quaternion[] rotations = new Quaternion[totalFrames];
-        Vector3f[] scales = new Vector3f[totalFrames];
-	for (int i = 0; i < totalFrames; ++i) {
-        	times[i] = t;
-        	t += dT;
-        	translations[i] = new Vector3f(30, x, -30);
-        	x += dX;
-        	rotations[i] = Quaternion.IDENTITY;
-        	scales[i] = Vector3f.UNIT_XYZ;
-        }
-        SpatialTrack spatialTrack = new SpatialTrack(times, translations, rotations, scales);
-        
-        //creating the animation
-        Animation spatialAnimation = new Animation("anim", animTime);
-        spatialAnimation.setTracks(new SpatialTrack[] { spatialTrack });
-        
-        //create spatial animation control
-        AnimControl control = new AnimControl();
-        HashMap<String, Animation> animations = new HashMap<String, Animation>();
-        animations.put("anim", spatialAnimation);
-        control.setAnimations(animations);
-        model.addControl(control);
-        rootNode.attachChild(model);
-        
-        //run animation
-        control.createChannel().setAnim("anim");
-        */
     }
     
     
@@ -315,7 +203,7 @@ public class HelloJME3 extends SimpleApplication
         /** Set up Physics */
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
-        //bulletAppState.setDebugEnabled(true);
+        //bulletAppState.setDebugEnabled(true); //
         
         // We re-use the flyby camera for rotation, while positioning is handled by physics
         viewPort.setBackgroundColor(new ColorRGBA(0.7f, 0.8f, 1f, 1f));
@@ -358,25 +246,7 @@ public class HelloJME3 extends SimpleApplication
         landscape = new RigidBodyControl(sceneShape, 0);
         terrain.addControl(landscape);
         
-        /*
-        Material ceilingMat = new Material(assetManager,
-                "Common/MatDefs/Terrain/Terrain.j3md");
         
-        ceilingMat.setFloat("Tex3Scale", 128f);
-        ceiling = new TerrainQuad("my ceiling", 65, 513, heightmap.getHeightMap());
-        ceiling.setMaterial(terrainMat);
-
-        ceiling.setLocalScale(2f);
-
-        // We set up collision detection for the scene by creating a
-        // compound collision shape and a static RigidBodyControl with mass zero.
-        CollisionShape ceilingShape =
-                CollisionShapeFactory.createMeshShape(ceiling);
-        ceilingLandscape = new RigidBodyControl(ceilingShape, 0);
-        ceiling.addControl(ceilingLandscape);
-        rootNode.attachChild(ceiling);
-        bulletAppState.getPhysicsSpace().add(ceilingLandscape);
-        */
         
         /**
          * We set up collision detection for the player by creating
@@ -391,7 +261,7 @@ public class HelloJME3 extends SimpleApplication
         player.setFallSpeed(30);
         player.setPhysicsLocation(new Vector3f(20, 10, 20));
         player.setUp(new Vector3f(0, 1, 0)); 
-        //player = new BetterCharacterControl(1.5f, 6f, 1f); 
+        
         
         // We attach the scene and the player to the rootnode and the physics space,
         // to make them appear in the game world.
@@ -406,11 +276,8 @@ public class HelloJME3 extends SimpleApplication
         cam.setLocation(player.getPhysicsLocation());
         cam.lookAtDirection(new Vector3f(0, 0, 1), new Vector3f(0,1,0));
         
-        addColoredCube(0,2,0,ColorRGBA.Blue);
-        addColoredCube(2,2,0,ColorRGBA.Blue);
-        addColoredCube(4,2,0,ColorRGBA.Blue);
-        addColoredCube(0,2,2,ColorRGBA.Red);
-        addColoredCube(0,2,4,ColorRGBA.Red);
+        up = false;
+        down = false;
     }
     
     void fileMaze(int height, int width){
@@ -531,7 +398,6 @@ public class HelloJME3 extends SimpleApplication
         walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
         walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
         walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-        //System.out.println(walleMat.getParams());
         walle.setMaterial(walleMat);
         Node walleNod = new Node("walleNod");
         world.attachChild(walleNod);
@@ -580,7 +446,6 @@ public class HelloJME3 extends SimpleApplication
         walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
         walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
         walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-        //System.out.println(walleMat.getParams());
         walle.setMaterial(walleMat);
         Node walleNod = new Node("walleNod");
         world.attachChild(walleNod);
@@ -646,7 +511,6 @@ public class HelloJME3 extends SimpleApplication
         
         CollisionShape wallShape = CollisionShapeFactory.createBoxShape(geom);
         RigidBodyControl thing = new RigidBodyControl(wallShape, 0);
-        //cNode.addControl(thing);
         
         rootNode.attachChild(cNode);
         
@@ -660,8 +524,7 @@ public class HelloJME3 extends SimpleApplication
         getPhysicsSpace().add(ghostControl);
         return cNode;
         
-        /*
-        */
+        
     }
     
     void addColoredCube(float x, float y, float z, ColorRGBA color){
@@ -740,7 +603,6 @@ public class HelloJME3 extends SimpleApplication
         walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
         walleMat.setColor("Ambient",ColorRGBA.White.mult(0.3f));
         walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-        //System.out.println(walleMat.getParams());
         walle.setMaterial(walleMat);
         Node walleNod = new Node("walleNod");
         world.attachChild(walleNod);
@@ -786,8 +648,6 @@ public class HelloJME3 extends SimpleApplication
         Geometry walle = new Geometry("Box", quad);
       
       
-        //Quad quad = new Quad(width,height);
-        //Geometry walle = new Geometry("Wall-e",quad);
         Material walleMat = new Material(assetManager,"Common/MatDefs/Light/Lighting.j3md");
 
         Texture image = assetManager.loadTexture("Textures/MetalGate.jpg");
@@ -803,8 +663,6 @@ public class HelloJME3 extends SimpleApplication
         
         walleMat.setColor("Specular",ColorRGBA.White); // for shininess
         walleMat.setFloat("Shininess", 8f); // [1,128] for shininess
-        //walleMat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
-        //System.out.println(walleMat.getParams());
         walle.setMaterial(walleMat);
         Node walleNod = new Node("walleNod");
         world.attachChild(walleNod);
@@ -835,7 +693,7 @@ public class HelloJME3 extends SimpleApplication
         return walleNod;
     }
   
-    public void createGateAnimation(int faseAtual){
+    public void createGateAnimation(int faseAtual){ //this way of making animation is deprecated after jdk 3.2, maybe one I'll update to one similar to the commented one below (which doesn't work)
         if(faseAtual > 0 && mapas[faseAtual-1].gate != null){
                 for(int j = 0;j<this.mapas[faseAtual-1].numOfGates;j++){
                     float animTime = 5;
@@ -906,11 +764,11 @@ public class HelloJME3 extends SimpleApplication
           down = isPressed;
         } else if (binding.equals("Exit")) {
           exit = isPressed;
-        } else if (binding.equals("Jump")) {
+        }else if (binding.equals("Jump")) {
             if (isPressed) {
-                //if(player.onGround()){
+                if(player.onGround()){
                     player.jump(new Vector3f(0,20f,0));}
-              //}
+                }
 
         }
     }
@@ -936,44 +794,73 @@ public class HelloJME3 extends SimpleApplication
    * The setWalkDirection() command is what lets a physics-controlled player walk.
    * We also make sure here that the camera moves with player.
    */
+    
   @Override
     public void simpleUpdate(float tpf){
         try{
             data = client.readGazeData();
             //System.out.println(data.getX() + " " + data.getY() + " " + data.getTimestamp()+ " " + data.isValid() + " " + cam.getDirection() + " " + player.getPhysicsLocation()); 
-            //down = data.getY() >=800;
-            //up = data.getY() <= 200;
+            
         }
         
         catch(Exception e){
             System.out.println(e);
         }
-        if(data.getY() <= 200 && data.getX() >= 300 && data.getX() <= 1100){
-            if(toggleWalkCounter >= 1200){
-                up = !up;
-                toggleWalkCounter = 0;
+        
+        if(data.getY() <= 150 && data.getX() >= 400 && data.getX() <= 1100){
+            up = true;
+        }
+        
+        if(data.getY() >= 700 && data.getX() >= 400 && data.getX() <= 1100){
+            up = false;
+        }
+        
+        //an attempt at an timed toggle for walking forward and backward
+//        if(data.getY() <= 250 && data.getX() >= 400 && data.getX() <= 1100){
+//            if(toggleWalkCounter >= 1200){
+//                up = !up;
+//                down = false;
+//                toggleWalkCounter = 0;
+//            }else{
+//                toggleWalkCounter++;
+//            }
+//        }else{
+//            toggleWalkCounter = 0;
+//        }
+//        
+//        if(data.getY() >= 600 && data.getX() >= 400 && data.getX() <= 1100){
+//            if(toggleBackWalkCounter >= 1200){
+//                down = !down;
+//                up = false;
+//                toggleBackWalkCounter = 0;
+//            }else{
+//                toggleBackWalkCounter++;
+//            }
+//        }else{
+//            toggleBackWalkCounter = 0;
+//        }
+        
+        if(data.getX() <= 250 || data.getX() >= 1250){
+            Vector3f vup = new Vector3f(0,1,0);
+            Vector3f vAtual = cam.getDirection();
+            Vector3f vecFinal;
+            if(data.getX() <= 250){
+                vecFinal = cam.getLeft();
             }else{
-                toggleWalkCounter++;
+                vecFinal = cam.getLeft().negate();
             }
-        }else{
-            toggleWalkCounter = 0;
-        }
-        if(data.getX() >= 1200){
-            //cam.getRotation().
-            
-            //Quaternion quat = new Quaternion().lookAt(walkDirection, new Vector3f(0,1,0));
-            //cam.setRotation(cam.getRotation().add(quat));
-            //cam.setRotation(quat);
-            Vector3f vectorRight = new Vector3f(0.1f,0,0.1f);
-            vectorRight.cross(walkDirection);
-            cam.lookAtDirection(vectorRight, new Vector3f(0,1,0));
-            //camDir.set(camDir.x+1, 0, camDir.z);
-            //camDir.addLocal(1f,0,0);
-        }
+            for(int v = 0; v < 300; v++){
+                vecFinal = vecFinal.add(vAtual);
+            }
 
+            cam.lookAtDirection(vecFinal, vup);
+        }
+        
+        
         camDir.set(cam.getDirection()).multLocal(0.6f);
         
         camLeft.set(cam.getLeft()).multLocal(0.4f);
+        
         walkDirection.set(0, 0, 0);
         if (left) {
             walkDirection.addLocal(camLeft);
@@ -982,12 +869,12 @@ public class HelloJME3 extends SimpleApplication
             walkDirection.addLocal(camLeft.negate());
         }
         if (up) {
-            //fazer norma (pitagoras)
-            //divide cada um pela norma
-            walkDirection.addLocal(camDir.x,0,camDir.z);
+            //divide each by the norm (which is achieved by using pithagorean theorem) so that forward speed becomes independent of camera y axis
+            //It doesn't matter in this game though because with the eyetracking controls it isn't possible to look up or down anyway
+            walkDirection.addLocal(camDir.x*2/3,0,camDir.z*2/3);
         }
         if (down) {
-            walkDirection.addLocal(-camDir.x,0,-camDir.z);
+            walkDirection.addLocal(-camDir.x*2/3,0,-camDir.z*2/3);
         }
         if (exit) {
             fake.exit();
@@ -1028,7 +915,6 @@ public class HelloJME3 extends SimpleApplication
         }
         if(this.fase > 0 && mapas[this.fase-1].gate != null){
             for(int j = 0;j<this.mapas[this.fase-1].numOfGates;j++){
-                //System.out.println(mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingCount());
                 if(mapas[this.fase-1].gateKey[j].getControl(GhostControl.class).getOverlappingObjects().contains(player)){
                     mapas[this.fase-1].hasGateKey[j] = true;
                     mapas[this.fase-1].gateKey[j].removeFromParent();
@@ -1036,6 +922,7 @@ public class HelloJME3 extends SimpleApplication
                 
                 if((!mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingObjects().contains(rootNode.getChild(0).getControl(RigidBodyControl.class)) ||mapas[this.fase-1].gate[j].getControl(GhostControl.class).getOverlappingObjects().contains(player)) && mapas[this.fase-1].hasGateKey[j]){
                     //mapas[this.fase-1].gate[j].getControl(AnimComposer.class).setCurrentAction("anim");
+                    //the above code would be the way to use animation without using deprecated libraries.
                     if(mapas[this.fase-1].gate[j].getControl(AnimControl.class).getNumChannels() < 1){
                         //run animation
                         
@@ -1054,7 +941,6 @@ public class HelloJME3 extends SimpleApplication
                         
                         
                     }
-                //bulletAppState.getPhysicsSpace().remove(mapas[this.fase-1].gate[j].getChild(0).getControl(RigidBodyControl.class));
                 
 
                 }
@@ -1070,14 +956,11 @@ public class HelloJME3 extends SimpleApplication
                 this.fase = 0;
                 begin();
                 createHubworldSelection();
-                //ghostControlNextLevel = addCubeCollision(20*5,2,20*5);
-                //ghostControlToHub = addCubeCollision(20*5,35,20*5);
             }
         if(ghostControlNextLevel != null)
             if(ghostControlNextLevel.getControl(GhostControl.class).getOverlappingObjects().contains(player) && this.mainKey){
                 resetAll();
                 begin();
-                //ghostControlToHub = addCubeCollision(20*5,35,20*5);
                 this.fase++;
                 fileMaze(20,20);
                 if(this.fase < this.noMapas)
